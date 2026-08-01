@@ -1,0 +1,28 @@
+[project]
+name = "risk-engine"
+version = "0.1.0"
+description = "Métricas de risco (analítico) e gate pré-trade (síncrono)."
+requires-python = ">=3.11"
+dependencies = [
+    "psycopg[binary]>=3.1",
+]
+
+# market-data-lake não é publicado em índice — instale como editable
+# no mesmo venv: `pip install -e ./market-data-lake -e ./risk-engine`
+# (monólito modular, ADR-0001).
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -4,7 +4,7 @@ Plataforma modular de **Quantitative Trading** que integra Engenharia de Dados,
 Machine Learning, IA Generativa e Engenharia de Software para pesquisa,
 backtesting, gestão de risco e execução de estratégias quantitativas.
 
-> Status geral: 🟡 **Fase 1 — Dados** (market-data-lake e feature-store em implementação local/dev)
+> Status geral: 🟡 **Fase 1-2** (market-data-lake, feature-store e risk-engine em implementação local/dev)
 
 ## Visão
 

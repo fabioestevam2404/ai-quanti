@@ -37,8 +37,13 @@ def _build_provider(source: str) -> MarketDataProvider:
     return provider_cls()
 
 
-def ingest_daily_bars(ticker: str, start: date, end: date, source: str = "mock") -> IngestionRun:
-    """Ingere barras diárias OHLCV e registra auditoria da execução."""
+def ingest_daily_bars(ticker: str, start: date, end: date, source: str) -> IngestionRun:
+    """Ingere barras diárias OHLCV e registra auditoria da execução.
+
+    `source` é obrigatório e sem default deliberadamente: um job agendado
+    sem esse parâmetro explícito não deve conseguir ingerir dados
+    sintéticos (`mock`) silenciosamente em vez de dados reais.
+    """
     use_case = IngestDailyBarsUseCase(
         provider=_build_provider(source),
         price_repository=DuckDBBarRepository(),

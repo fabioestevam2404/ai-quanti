@@ -48,32 +48,33 @@ jobs:
 
       - name: Install dev tooling
         run: |
-          pip install --upgrade pip
+          pip install --upgrade pip setuptools
           pip install ruff mypy bandit pip-audit
 
-      - name: "Install módulos implementados (Fase 1: market-data-lake, feature-store)"
+      - name: "Install módulos implementados (Fase 1-2: market-data-lake, feature-store, risk-engine)"
         run: |
           pip install -e "./market-data-lake[dev]"
           pip install -e "./feature-store[dev]"
+          pip install -e "./risk-engine[dev]"
 
       # NOTE: os demais módulos ainda não têm pyproject.toml (aguardando
       # spec — ver README.md raiz). Conforme forem implementados, adicionar
       # ao pip install acima e aos comandos de lint/mypy/bandit/pytest abaixo.
 
       - name: Lint (ruff)
-        run: ruff check market-data-lake feature-store
+        run: ruff check market-data-lake feature-store risk-engine
 
       - name: Type-check (mypy)
-        run: mypy market-data-lake/src feature-store/src
+        run: mypy market-data-lake/src feature-store/src risk-engine/src
 
       - name: Security scan (bandit)
-        run: bandit -r market-data-lake/src feature-store/src
+        run: bandit -r market-data-lake/src feature-store/src risk-engine/src
 
       - name: Dependency audit (pip-audit)
-        run: pip-audit || true
+        run: pip-audit
 
       - name: Tests (contra Postgres/Redis/DuckDB reais)
-        run: pytest market-data-lake feature-store --cov
+        run: pytest market-data-lake feature-store risk-engine --cov
 
   import-boundaries:
     runs-on: ubuntu-latest
@@ -89,6 +90,7 @@ jobs:
           pip install import-linter
           pip install -e ./market-data-lake
           pip install -e ./feature-store
+          pip install -e ./risk-engine
       # Garante que as fronteiras do ADR-0001 (monólito modular) não sejam
       # furadas por imports cruzados entre módulos ou entre camadas
       # internas (config em .importlinter, na raiz).

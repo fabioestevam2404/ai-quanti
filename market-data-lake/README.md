@@ -16,7 +16,7 @@ pytest
 from datetime import date
 from market_data_lake.api import ingest_daily_bars, get_price_series
 
-ingest_daily_bars("PETR4", date(2026, 8, 1), date(2026, 8, 14))  # source="mock" por padrão
+ingest_daily_bars("PETR4", date(2026, 8, 1), date(2026, 8, 14), source="mock")  # sem default de propósito
 get_price_series("PETR4", date(2026, 8, 1), date(2026, 8, 14))
 ```
 
