@@ -1,0 +1,36 @@
+[importlinter]
+root_packages =
+    market_data_lake
+    feature_store
+
+[importlinter:contract:market-data-lake-layers]
+name = market-data-lake: domain não conhece application/infrastructure/api
+type = layers
+layers =
+    market_data_lake.api
+    market_data_lake.infrastructure
+    market_data_lake.application
+    market_data_lake.domain
+
+[importlinter:contract:feature-store-layers]
+name = feature-store: domain não conhece application/infrastructure/api
+type = layers
+layers =
+    feature_store.api
+    feature_store.infrastructure
+    feature_store.application
+    feature_store.domain
+
+[importlinter:contract:feature-store-so-usa-market-data-lake-api]
+name = feature-store só pode importar market_data_lake.api (nunca domain/application/infrastructure)
+type = forbidden
+source_modules =
+    feature_store
+forbidden_modules =
+    market_data_lake.domain
+    market_data_lake.application
+    market_data_lake.infrastructure
+# market_data_lake.api importa domain/application/infrastructure internamente
+# para se montar (é a fachada) — isso não deve contar como violação de
+# feature_store, só o import direto conta.
+allow_indirect_imports = True

@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.import_linter_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Dados locais (DuckDB, etc.) — nunca versionar dados, só schema/código
+data/
+*.duckdb
+
+# Ambientes / segredos
+.env
+.env.*
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Configuração local de tooling (permissões de sessão, não é código do time)
+.claude/

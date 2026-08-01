@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: quant
+          POSTGRES_PASSWORD: quant
+          POSTGRES_DB: quant_platform
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U quant -d quant_platform"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      MARKET_DATA_LAKE_PG_DSN: postgresql://quant:quant@localhost:5432/quant_platform
+      FEATURE_STORE_REDIS_URL: redis://localhost:6379/0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dev tooling
+        run: |
+          pip install --upgrade pip
+          pip install ruff mypy bandit pip-audit
+
+      - name: "Install módulos implementados (Fase 1: market-data-lake, feature-store)"
+        run: |
+          pip install -e "./market-data-lake[dev]"
+          pip install -e "./feature-store[dev]"
+
+      # NOTE: os demais módulos ainda não têm pyproject.toml (aguardando
+      # spec — ver README.md raiz). Conforme forem implementados, adicionar
+      # ao pip install acima e aos comandos de lint/mypy/bandit/pytest abaixo.
+
+      - name: Lint (ruff)
+        run: ruff check market-data-lake feature-store
+
+      - name: Type-check (mypy)
+        run: mypy market-data-lake/src feature-store/src
+
+      - name: Security scan (bandit)
+        run: bandit -r market-data-lake/src feature-store/src
+
+      - name: Dependency audit (pip-audit)
+        run: pip-audit || true
+
+      - name: Tests (contra Postgres/Redis/DuckDB reais)
+        run: pytest market-data-lake feature-store --cov
+
+  import-boundaries:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install módulos e import-linter
+        run: |
+          pip install --upgrade pip
+          pip install import-linter
+          pip install -e ./market-data-lake
+          pip install -e ./feature-store
+      # Garante que as fronteiras do ADR-0001 (monólito modular) não sejam
+      # furadas por imports cruzados entre módulos ou entre camadas
+      # internas (config em .importlinter, na raiz).
+      - name: Check module boundaries
+        run: lint-imports
