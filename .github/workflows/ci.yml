@@ -51,30 +51,31 @@ jobs:
           pip install --upgrade pip setuptools
           pip install ruff mypy bandit pip-audit
 
-      - name: "Install módulos implementados (Fase 1-2: market-data-lake, feature-store, risk-engine)"
+      - name: "Install módulos implementados (Fase 1-2 e fatia inicial da Fase 4)"
         run: |
           pip install -e "./market-data-lake[dev]"
           pip install -e "./feature-store[dev]"
           pip install -e "./risk-engine[dev]"
+          pip install -e "./trading-api[dev]"
 
       # NOTE: os demais módulos ainda não têm pyproject.toml (aguardando
       # spec — ver README.md raiz). Conforme forem implementados, adicionar
       # ao pip install acima e aos comandos de lint/mypy/bandit/pytest abaixo.
 
       - name: Lint (ruff)
-        run: ruff check market-data-lake feature-store risk-engine
+        run: ruff check market-data-lake feature-store risk-engine trading-api
 
       - name: Type-check (mypy)
-        run: mypy market-data-lake/src feature-store/src risk-engine/src
+        run: mypy market-data-lake/src feature-store/src risk-engine/src trading-api/src
 
       - name: Security scan (bandit)
-        run: bandit -r market-data-lake/src feature-store/src risk-engine/src
+        run: bandit -r market-data-lake/src feature-store/src risk-engine/src trading-api/src
 
       - name: Dependency audit (pip-audit)
         run: pip-audit
 
-      - name: Tests (contra Postgres/Redis/DuckDB reais)
-        run: pytest market-data-lake feature-store risk-engine --cov
+      - name: Tests (contra Postgres/Redis/DuckDB reais; trading-api não precisa de infra)
+        run: pytest market-data-lake feature-store risk-engine trading-api --cov
 
   import-boundaries:
     runs-on: ubuntu-latest
@@ -91,6 +92,7 @@ jobs:
           pip install -e ./market-data-lake
           pip install -e ./feature-store
           pip install -e ./risk-engine
+          pip install -e ./trading-api
       # Garante que as fronteiras do ADR-0001 (monólito modular) não sejam
       # furadas por imports cruzados entre módulos ou entre camadas
       # internas (config em .importlinter, na raiz).

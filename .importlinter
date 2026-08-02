@@ -3,6 +3,7 @@ root_packages =
     market_data_lake
     feature_store
     risk_engine
+    trading_api
 
 [importlinter:contract:market-data-lake-layers]
 name = market-data-lake: domain não conhece application/infrastructure/api
@@ -55,3 +56,14 @@ forbidden_modules =
     market_data_lake.application
     market_data_lake.infrastructure
 allow_indirect_imports = True
+
+[importlinter:contract:trading-api-layers]
+name = trading-api: domain não conhece infrastructure (nem application/api, quando existirem)
+type = layers
+layers =
+    trading_api.infrastructure
+    trading_api.domain
+# Ainda não há trading_api.application/api nesta fatia (só o port de
+# corretora, ver trading-api/docs/spec.md) — adicionar ao contrato quando
+# a camada de orquestração (kill switch, idempotência, reconciliação)
+# for implementada.
