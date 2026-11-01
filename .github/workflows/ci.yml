@@ -16,11 +16,11 @@ jobs:
         env:
           POSTGRES_USER: quant
           POSTGRES_PASSWORD: quant
-          POSTGRES_DB: quant_platform
+          POSTGRES_DB: quant_platform_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U quant -d quant_platform"
+          --health-cmd "pg_isready -U quant -d quant_platform_test"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
@@ -35,8 +35,11 @@ jobs:
           --health-retries 10
 
     env:
-      MARKET_DATA_LAKE_PG_DSN: postgresql://quant:quant@localhost:5432/quant_platform
-      FEATURE_STORE_REDIS_URL: redis://localhost:6379/0
+      QUANT_TEST_PG_DSN: postgresql://quant:quant@localhost:5432/quant_platform_test
+      QUANT_TEST_REDIS_URL: redis://localhost:6379/15
+      # Infra indisponível vira falha (não skip): os testes de integração são
+      # evidência dos critérios de aceite e não podem "passar" sem rodar.
+      QUANT_REQUIRE_INTEGRATION: "1"
 
     steps:
       - uses: actions/checkout@v4

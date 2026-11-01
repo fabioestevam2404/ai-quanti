@@ -6,9 +6,10 @@ services:
       POSTGRES_PASSWORD: quant
       POSTGRES_DB: quant_platform
     ports:
-      - "${MARKET_DATA_LAKE_PG_PORT:-5432}:5432"
+      - "${QUANT_PG_PORT:-5432}:5432"
     volumes:
       - quant_platform_postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U quant -d quant_platform"]
       interval: 5s
@@ -18,7 +19,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "${FEATURE_STORE_REDIS_PORT:-6379}:6379"
+      - "${QUANT_REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
