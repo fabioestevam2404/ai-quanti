@@ -106,9 +106,7 @@ class SimulatedBrokerAdapter:
         return AccountBalance(cash=self._cash, buying_power=self._cash)
 
     @staticmethod
-    def _resolve_execution(
-        request: OrderRequest, market_price: Decimal
-    ) -> tuple[bool, Decimal]:
+    def _resolve_execution(request: OrderRequest, market_price: Decimal) -> tuple[bool, Decimal]:
         if request.order_type == OrderType.MARKET:
             return True, market_price
 

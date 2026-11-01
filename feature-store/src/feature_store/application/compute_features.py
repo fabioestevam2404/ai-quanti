@@ -29,9 +29,7 @@ class ComputeFeaturesUseCase:
             window_start = max(0, index - self._window + 1)
             window_bars = sorted_bars[window_start : index + 1]
             closes = [bar.close for bar in window_bars]
-            returns = [
-                (closes[i] - closes[i - 1]) / closes[i - 1] for i in range(1, len(closes))
-            ]
+            returns = [(closes[i] - closes[i - 1]) / closes[i - 1] for i in range(1, len(closes))]
             if not returns:
                 continue
 

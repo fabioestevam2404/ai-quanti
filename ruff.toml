@@ -1,6 +1,11 @@
 target-version = "py311"
 line-length = 100
 
+[format]
+# Specs e READMEs têm blocos de código escritos para leitura (assinaturas
+# alinhadas, exemplos) — o formatter só cuida de arquivos Python.
+exclude = ["*.md"]
+
 [lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 ignore = []

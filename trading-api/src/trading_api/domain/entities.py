@@ -35,12 +35,8 @@ class OrderStatus(StrEnum):
     UNKNOWN = "unknown"
 
 
-OPEN_STATUSES = frozenset(
-    {OrderStatus.PENDING, OrderStatus.ACCEPTED, OrderStatus.PARTIALLY_FILLED}
-)
-TERMINAL_STATUSES = frozenset(
-    {OrderStatus.FILLED, OrderStatus.REJECTED, OrderStatus.CANCELLED}
-)
+OPEN_STATUSES = frozenset({OrderStatus.PENDING, OrderStatus.ACCEPTED, OrderStatus.PARTIALLY_FILLED})
+TERMINAL_STATUSES = frozenset({OrderStatus.FILLED, OrderStatus.REJECTED, OrderStatus.CANCELLED})
 
 
 @dataclass(frozen=True, slots=True)

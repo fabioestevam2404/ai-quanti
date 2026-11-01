@@ -52,9 +52,7 @@ class PostgresCircuitBreaker:
                 (_SINGLETON_ID,),
             ).fetchone()
             if row is None:
-                raise RuntimeError(
-                    "linha singleton do circuit breaker ausente — schema corrompido"
-                )
+                raise RuntimeError("linha singleton do circuit breaker ausente — schema corrompido")
             return CircuitBreakerState(tripped=row[0], tripped_date=row[1], tripped_reason=row[2])
 
     def trip(self, reason: str, as_of: date) -> None:
