@@ -15,32 +15,12 @@ class PostgresPositionLedger:
     """Ledger de exposição e P&L diário — fonte da verdade do risk-engine (ADR-0006).
 
     Nunca confia em número informado pelo caller de `evaluate_order`; só
-    muda via `apply_fill`.
+    muda via `apply_fill`. O schema vem das migrações em
+    `risk-engine/migrations` (ADR-0012); o repositório não cria tabelas.
     """
 
     def __init__(self, dsn: str | None = None) -> None:
         self._dsn = dsn or os.environ.get("RISK_ENGINE_PG_DSN", DEFAULT_DSN)
-        self._ensure_schema()
-
-    def _ensure_schema(self) -> None:
-        with psycopg.connect(self._dsn) as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS risk_positions (
-                    ticker TEXT PRIMARY KEY,
-                    exposure NUMERIC(20, 8) NOT NULL DEFAULT 0
-                )
-                """
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS risk_daily_pnl (
-                    pnl_date DATE PRIMARY KEY,
-                    realized_pnl NUMERIC(20, 8) NOT NULL DEFAULT 0
-                )
-                """
-            )
-            conn.commit()
 
     def get_exposure(self, ticker: str) -> Decimal:
         with psycopg.connect(self._dsn) as conn:

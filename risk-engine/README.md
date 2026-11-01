@@ -15,7 +15,13 @@ mesmo ambiente ([ADR-0011](../docs/adr/0011-uv-workspace-lockfile.md)).
 ```
 docker compose -f ../infrastructure/docker-compose.local.yml up -d
 uv run --all-packages pytest
+
+# Schema do banco de dev (ledger + circuit breaker) — ADR-0012
+uv run --all-packages alembic upgrade head
 ```
+
+Sem as migrações aplicadas, o gate pré-trade **bloqueia** toda ordem
+(fail-closed, ADR-0006): falha segura, mas falha.
 
 ```python
 from datetime import date

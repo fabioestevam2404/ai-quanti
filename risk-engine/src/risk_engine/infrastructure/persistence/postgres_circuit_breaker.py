@@ -14,35 +14,13 @@ _SINGLETON_ID = 1
 class PostgresCircuitBreaker:
     """Estado do circuit breaker — persistido, nunca resetado automaticamente
     (ADR-0006: reset manual ou a data vira, ver `CircuitBreakerState.is_tripped_on`).
+
+    Tabela e linha singleton vêm das migrações em `risk-engine/migrations`
+    (ADR-0012); o repositório não cria schema.
     """
 
     def __init__(self, dsn: str | None = None) -> None:
         self._dsn = dsn or os.environ.get("RISK_ENGINE_PG_DSN", DEFAULT_DSN)
-        self._ensure_schema()
-
-    def _ensure_schema(self) -> None:
-        with psycopg.connect(self._dsn) as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS risk_circuit_breaker_state (
-                    id INTEGER PRIMARY KEY,
-                    tripped BOOLEAN NOT NULL DEFAULT FALSE,
-                    tripped_date DATE,
-                    tripped_reason TEXT,
-                    reset_at TIMESTAMPTZ,
-                    reset_by TEXT
-                )
-                """
-            )
-            conn.execute(
-                """
-                INSERT INTO risk_circuit_breaker_state (id, tripped)
-                VALUES (%s, FALSE)
-                ON CONFLICT (id) DO NOTHING
-                """,
-                (_SINGLETON_ID,),
-            )
-            conn.commit()
 
     def get_state(self) -> CircuitBreakerState:
         with psycopg.connect(self._dsn) as conn:
