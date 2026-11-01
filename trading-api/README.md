@@ -30,8 +30,7 @@ limits são o próximo incremento — ver
 Sem dependências externas nesta fatia — não precisa de Docker Compose.
 
 ```
-pip install -e ".[dev]"
-pytest
+uv run --all-packages pytest
 ```
 
 ```python

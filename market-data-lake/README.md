@@ -8,8 +8,7 @@ Ingestão, versionamento e armazenamento histórico de dados de mercado (preços
 
 ```
 docker compose -f ../infrastructure/docker-compose.local.yml up -d
-pip install -e ".[dev]"
-pytest
+uv run --all-packages pytest
 ```
 
 ```python

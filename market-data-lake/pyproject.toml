@@ -9,11 +9,7 @@ dependencies = [
     "requests>=2.31",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0",
-    "pytest-cov>=5.0",
-]
+# Ferramentas de dev/teste: grupo `dev` do workspace na raiz (ADR-0011).
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]

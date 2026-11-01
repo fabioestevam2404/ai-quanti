@@ -7,15 +7,9 @@ dependencies = [
     "redis>=5.0",
 ]
 
-# market-data-lake não é publicado em índice — instale ambos como editable
-# no mesmo venv: `pip install -e ./market-data-lake -e ./feature-store`
-# (monólito modular, ADR-0001; sem publicação inter-módulo nesta fase).
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0",
-    "pytest-cov>=5.0",
-]
+# Usa market_data_lake.api, que não é publicado em índice: o uv workspace
+# da raiz instala os dois no mesmo ambiente (`uv sync --all-packages`,
+# ADR-0011). Ferramentas de dev/teste: grupo `dev` da raiz.
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]

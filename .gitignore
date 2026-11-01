@@ -8,6 +8,8 @@ __pycache__/
 .import_linter_cache/
 .coverage
 htmlcov/
+# Gerado pelo passo de pip-audit do CI a partir do uv.lock
+requirements-audit.txt
 .venv/
 venv/
 

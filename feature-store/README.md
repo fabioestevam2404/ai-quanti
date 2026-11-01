@@ -6,13 +6,12 @@ Engenharia de atributos versionada, ponto único de leitura de features para tre
 
 ## Rodando localmente
 
-Depende do `market-data-lake` já instalado no mesmo ambiente (ver README dele).
+Depende do `market-data-lake`; o uv workspace da raiz instala os dois no
+mesmo ambiente ([ADR-0011](../docs/adr/0011-uv-workspace-lockfile.md)).
 
 ```
 docker compose -f ../infrastructure/docker-compose.local.yml up -d
-pip install -e ../market-data-lake
-pip install -e ".[dev]"
-pytest
+uv run --all-packages pytest
 ```
 
 ```python
