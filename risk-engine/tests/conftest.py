@@ -5,11 +5,31 @@ from pathlib import Path
 
 import psycopg
 import pytest
+from alembic import command
+from alembic.config import Config
 from psycopg.conninfo import conninfo_to_dict
 
 # Variável própria dos testes (não RISK_ENGINE_PG_DSN): um `.env` de dev nunca
 # redireciona a suíte para o banco de desenvolvimento.
 DEFAULT_TEST_PG_DSN = "postgresql://quant:quant@localhost:5432/quant_platform_test"
+MODULE_DIR = Path(__file__).resolve().parents[1]
+# compute_metrics_for_ticker ingere via market_data_lake, que grava auditoria
+# no schema dele — as migrações do market-data-lake também precisam rodar.
+MIGRATION_DIRS = (MODULE_DIR, MODULE_DIR.parent / "market-data-lake")
+
+_migrated: set[str] = set()
+
+
+def _apply_migrations(dsn: str) -> None:
+    # Schema vem só das migrações (ADR-0012) — a suíte exercita o mesmo
+    # caminho de produção. Uma vez por sessão: `upgrade head` é idempotente.
+    if dsn in _migrated:
+        return
+    for module_dir in MIGRATION_DIRS:
+        config = Config(str(module_dir / "alembic.ini"))
+        config.attributes["dsn"] = dsn
+        command.upgrade(config, "head")
+    _migrated.add(dsn)
 
 
 def _integration_unavailable(reason: str) -> None:
@@ -51,23 +71,13 @@ def postgres_dsn(monkeypatch: pytest.MonkeyPatch) -> str:
     # compute_metrics_for_ticker ingere via market_data_lake, que grava
     # auditoria pelo DSN dele — sem isto, essa escrita cairia no banco de dev.
     monkeypatch.setenv("MARKET_DATA_LAKE_PG_DSN", dsn)
+    _apply_migrations(dsn)
     _reset_risk_tables(dsn)
     return dsn
 
 
 def _reset_risk_tables(dsn: str) -> None:
-    # Garante o schema (idempotente) antes de limpar — primeira execução
-    # nesta instância de Postgres ainda não tem as tabelas.
-    from risk_engine.infrastructure.persistence.postgres_circuit_breaker import (
-        PostgresCircuitBreaker,
-    )
-    from risk_engine.infrastructure.persistence.postgres_position_ledger import (
-        PostgresPositionLedger,
-    )
-
-    PostgresPositionLedger(dsn=dsn)
-    PostgresCircuitBreaker(dsn=dsn)
-
+    # Limpa dados, preservando a linha singleton criada pela migração.
     with psycopg.connect(dsn) as conn:
         conn.execute("DELETE FROM risk_positions")
         conn.execute("DELETE FROM risk_daily_pnl")

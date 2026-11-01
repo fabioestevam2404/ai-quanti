@@ -49,9 +49,18 @@ docker compose -f infrastructure/docker-compose.local.yml up -d
 # 2. Ambiente (.venv) com os módulos implementados e as ferramentas de dev
 uv sync --all-packages
 
-# 3. Testes (contra Postgres/Redis reais, em banco exclusivo de teste)
+# 3. Testes (contra Postgres/Redis reais, em banco exclusivo de teste;
+#    as fixtures aplicam as migrações no banco de teste)
 uv run pytest market-data-lake feature-store risk-engine trading-api
+
+# 4. Para usar os módulos em dev: schema do banco de dev via migrações
+uv run alembic -c market-data-lake/alembic.ini upgrade head
+uv run alembic -c risk-engine/alembic.ini upgrade head
 ```
+
+O schema do Postgres vem só das migrações versionadas de cada módulo
+([ADR-0012](docs/adr/0012-schema-migrations-alembic.md)): os repositórios não
+criam tabelas.
 
 Em rede com inspeção TLS (proxy ou antivírus corporativo), defina
 `UV_SYSTEM_CERTS=1` para o uv usar os certificados do sistema. Não desligue
@@ -92,6 +101,7 @@ Cada push e pull request para `main` roda no [CI](.github/workflows/ci.yml):
 - `uv sync --locked`: falha se o lockfile estiver desatualizado
 - `ruff` (lint e formatação) e `mypy` (tipos)
 - `bandit` (análise de segurança) e `pip-audit` (vulnerabilidades no lockfile)
+- migrações: `upgrade → downgrade → upgrade` em Postgres vazio
 - `pytest` com cobertura, contra Postgres e Redis reais
 - `lint-imports` (fronteiras do monólito modular)
 
@@ -106,9 +116,8 @@ Cada push e pull request para `main` roda no [CI](.github/workflows/ci.yml):
 | 4: Produto 🟡 | `trading-api`, `trading-dashboard`, `portfolio-optimizer` | Superfície de uso, com kill switch, idempotência e reconciliação ([ADR-0007](docs/adr/0007-trading-api-safety-layers.md)) |
 | 5: Operação | `infrastructure`, `monitoring`, `reinforcement-learning` | Produção, observabilidade e experimentação avançada |
 
-Próximos passos de engenharia: migrações versionadas do banco, logs
-estruturados e rastreabilidade de critério de aceite até o teste
-correspondente.
+Próximos passos de engenharia: logs estruturados e rastreabilidade de
+critério de aceite até o teste correspondente.
 
 ## Documentação
 

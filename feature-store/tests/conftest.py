@@ -6,6 +6,8 @@ from pathlib import Path
 import psycopg
 import pytest
 import redis
+from alembic import command
+from alembic.config import Config
 from psycopg.conninfo import conninfo_to_dict
 
 # Variáveis próprias dos testes (não as da aplicação): um `.env` de dev nunca
@@ -13,6 +15,20 @@ from psycopg.conninfo import conninfo_to_dict
 # db 15 para não colidir com o db 0 do dev.
 DEFAULT_TEST_REDIS_URL = "redis://localhost:6379/15"
 DEFAULT_TEST_PG_DSN = "postgresql://quant:quant@localhost:5432/quant_platform_test"
+MARKET_DATA_LAKE_DIR = Path(__file__).resolve().parents[2] / "market-data-lake"
+
+_migrated: set[str] = set()
+
+
+def _apply_market_data_lake_migrations(dsn: str) -> None:
+    # A auditoria de ingestão é schema do market-data-lake: aplica as
+    # migrações dele (ADR-0012), uma vez por sessão.
+    if dsn in _migrated:
+        return
+    config = Config(str(MARKET_DATA_LAKE_DIR / "alembic.ini"))
+    config.attributes["dsn"] = dsn
+    command.upgrade(config, "head")
+    _migrated.add(dsn)
 
 
 def _integration_unavailable(reason: str) -> None:
@@ -51,6 +67,7 @@ def market_data_postgres_dsn(monkeypatch: pytest.MonkeyPatch) -> str:
             "infrastructure/docker-compose.local.yml up -d` antes de rodar "
             "os testes de integração (ADR: testes contra infra real, não mocks)."
         )
+    _apply_market_data_lake_migrations(dsn)
     monkeypatch.setenv("MARKET_DATA_LAKE_PG_DSN", dsn)
     return dsn
 

@@ -9,6 +9,9 @@ Ingestão, versionamento e armazenamento histórico de dados de mercado (preços
 ```
 docker compose -f ../infrastructure/docker-compose.local.yml up -d
 uv run --all-packages pytest
+
+# Schema do banco de dev (auditoria de ingestão) — ADR-0012
+uv run --all-packages alembic upgrade head
 ```
 
 ```python
