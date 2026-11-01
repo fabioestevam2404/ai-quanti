@@ -37,21 +37,25 @@ ordens são idempotentes e cada decisão estrutural tem um ADR.
 
 ## Como executar localmente
 
-Pré-requisitos: Python 3.11+ (o CI usa 3.12), Docker e Git.
+Pré-requisitos: [uv](https://docs.astral.sh/uv/getting-started/installation/),
+Docker e Git. O uv instala o Python fixado em [`.python-version`](.python-version)
+e as versões travadas em [`uv.lock`](uv.lock): local e CI usam o mesmo
+ambiente ([ADR-0011](docs/adr/0011-uv-workspace-lockfile.md)).
 
 ```bash
 # 1. Infra local (Postgres + Redis)
 docker compose -f infrastructure/docker-compose.local.yml up -d
 
-# 2. Ambiente virtual e módulos implementados
-python -m venv .venv
-source .venv/bin/activate          # Windows: .\.venv\Scripts\Activate.ps1
-pip install -e "./market-data-lake[dev]" -e "./feature-store[dev]" \
-            -e "./risk-engine[dev]" -e "./trading-api[dev]"
+# 2. Ambiente (.venv) com os módulos implementados e as ferramentas de dev
+uv sync --all-packages
 
 # 3. Testes (contra Postgres/Redis reais, em banco exclusivo de teste)
-pytest market-data-lake feature-store risk-engine trading-api
+uv run pytest market-data-lake feature-store risk-engine trading-api
 ```
+
+Em rede com inspeção TLS (proxy ou antivírus corporativo), defina
+`UV_SYSTEM_CERTS=1` para o uv usar os certificados do sistema. Não desligue
+a verificação.
 
 A suíte usa o banco `quant_platform_test` e o db 15 do Redis, nunca os dados de
 dev. Sem infraestrutura de pé, os testes de integração são pulados; com
@@ -85,8 +89,9 @@ volume antigo sem o banco de teste e outros problemas comuns:
 
 Cada push e pull request para `main` roda no [CI](.github/workflows/ci.yml):
 
-- `ruff` (lint) e `mypy` (tipos)
-- `bandit` (análise de segurança) e `pip-audit` (dependências vulneráveis)
+- `uv sync --locked`: falha se o lockfile estiver desatualizado
+- `ruff` (lint e formatação) e `mypy` (tipos)
+- `bandit` (análise de segurança) e `pip-audit` (vulnerabilidades no lockfile)
 - `pytest` com cobertura, contra Postgres e Redis reais
 - `lint-imports` (fronteiras do monólito modular)
 
@@ -101,9 +106,9 @@ Cada push e pull request para `main` roda no [CI](.github/workflows/ci.yml):
 | 4: Produto 🟡 | `trading-api`, `trading-dashboard`, `portfolio-optimizer` | Superfície de uso, com kill switch, idempotência e reconciliação ([ADR-0007](docs/adr/0007-trading-api-safety-layers.md)) |
 | 5: Operação | `infrastructure`, `monitoring`, `reinforcement-learning` | Produção, observabilidade e experimentação avançada |
 
-Próximos passos de engenharia: migrações versionadas do banco, ambiente
-reproduzível com lockfile, logs estruturados e rastreabilidade de critério de
-aceite até o teste correspondente.
+Próximos passos de engenharia: migrações versionadas do banco, logs
+estruturados e rastreabilidade de critério de aceite até o teste
+correspondente.
 
 ## Documentação
 

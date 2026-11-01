@@ -9,11 +9,12 @@ Papel duplo desde [ADR-0006](../docs/adr/0006-risk-engine-pre-trade-gate.md):
 
 ## Rodando localmente
 
+Depende do `market-data-lake`; o uv workspace da raiz instala os dois no
+mesmo ambiente ([ADR-0011](../docs/adr/0011-uv-workspace-lockfile.md)).
+
 ```
 docker compose -f ../infrastructure/docker-compose.local.yml up -d
-pip install -e ../market-data-lake
-pip install -e ".[dev]"
-pytest
+uv run --all-packages pytest
 ```
 
 ```python

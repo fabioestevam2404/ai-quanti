@@ -1,0 +1,21 @@
+# Raiz do uv workspace (ADR-0011). Não é um pacote: só agrupa os módulos
+# implementados num único ambiente e lockfile, e declara as ferramentas de
+# desenvolvimento compartilhadas. Novo módulo com código entra em `members`.
+[tool.uv.workspace]
+members = [
+    "market-data-lake",
+    "feature-store",
+    "risk-engine",
+    "trading-api",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "mypy>=1.10",
+    "bandit>=1.7",
+    "pip-audit>=2.7",
+    "import-linter>=2.0",
+]

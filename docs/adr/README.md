@@ -15,6 +15,7 @@ Formato: [template.md](template.md).
 | [0008](0008-paper-trading-gate.md) | Paper trading como gate formal e obrigatório | ✅ Aceito |
 | [0009](0009-secrets-management.md) | Gestão de segredos para credenciais de corretora | ✅ Aceito |
 | [0010](0010-backtesting-validation-checklist.md) | Checklist de validação (overfitting/look-ahead) no backtesting-engine | ✅ Aceito |
+| [0011](0011-uv-workspace-lockfile.md) | Ambiente reproduzível com uv workspace e lockfile único | ✅ Aceito |
 
 ## Convenções
 
