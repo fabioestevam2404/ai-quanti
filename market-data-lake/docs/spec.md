@@ -1,6 +1,6 @@
 # Spec — market-data-lake
 
-**Status:** v1 implementada; [v2 (REQ-01: COTAHIST e ajuste por proventos)](#v2--req-01-cotahist-e-ajuste-por-proventos) proposta — aguarda aprovação
+**Status:** v1 implementada; [v2 (REQ-01: COTAHIST e ajuste por proventos)](#v2--req-01-cotahist-e-ajuste-por-proventos) aprovada em 2026-11-02 — pronta para implementação
 **Fase:** 1 — Dados
 **Depende de:** nenhum módulo interno (fonte de verdade histórica)
 **ADRs relevantes:** [ADR-0001](../../docs/adr/0001-modular-monolith-vs-microservices.md) (fronteiras de módulo), [ADR-0003](../../docs/adr/0003-database-strategy.md) (DuckDB local / ClickHouse produção), [ADR-0002](../../docs/adr/0002-language-per-module.md) (Python)
