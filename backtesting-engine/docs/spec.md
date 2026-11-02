@@ -51,6 +51,17 @@ ele não diz que a estratégia é boa.
 | Parâmetro final | Escolhido na grade com todo o período fora do out-of-sample |
 | Robustez | `N` e `M` perturbados em ±10% e ±20% (arredondados, mantendo `N < M`). Aprovado se **todos** os vizinhos tiverem Sharpe ≥ `robustness_min_ratio` (padrão 0,5) × Sharpe do parâmetro final, no mesmo período |
 
+Regras fixadas na implementação (fatia 2):
+
+- **Cada período avaliado começa sem posição.** As médias usam o histórico
+  anterior ao período (aquecimento), nunca dados posteriores ao seu fim.
+- **Empate na seleção** fica com o primeiro parâmetro da grade
+  (determinismo, critério 11).
+- **Robustez com Sharpe base ≤ 0:** a proporção não se aplica; o resultado é
+  "não aplicável" e o item 6 do checklist fica `não verificado`.
+- Cada dobra guarda o resultado de treino que levou à escolha, para provar
+  que só o treino foi usado.
+
 As médias móveis vêm de `feature_store.api.compute_features_from_bars`
 (mudança **aditiva** feita na fatia 1): o mesmo cálculo de
 `get_training_features`, recebendo as barras em mãos. Assim o backtest usa a
@@ -181,7 +192,14 @@ tabela no mesmo PR; critério sem teste automatizado precisa de justificativa.
 | 2. Sem look-ahead | `test_simulate_execution.py::test_dados_posteriores_a_t_nao_alteram_sinais_nem_patrimonio_ate_t` | Unitário |
 | 3. Execução em `t+1` com custos | `test_simulate_execution.py::test_compra_executa_na_abertura_seguinte_nunca_no_fechamento_do_sinal`; `::test_venda_executa_na_abertura_seguinte_com_slippage_contra`; `::test_sinal_no_ultimo_dia_nao_executa_e_posicao_aberta_e_marcada_a_mercado` | Unitário |
 | 4. Aquecimento | `test_signals.py::test_aquecimento_ignora_sma_de_janela_parcial` | Unitário |
-| 5 a 14 | Pendentes: fatias 2 (validação) e 3 (checklist, relatório e API) | — |
+| 5. Out-of-sample isolado | `test_validation.py::test_out_of_sample_nao_influencia_a_selecao`; `::test_planejamento_reserva_o_fim_e_dobras_nao_se_sobrepoem` | Integração (via APIs de feature-store e risk-engine) |
+| 6. Walk-forward só com treino | `test_validation.py::test_cada_dobra_escolhe_so_com_o_proprio_treino`; `::test_planejamento_reserva_o_fim_e_dobras_nao_se_sobrepoem` | Integração |
+| 7. Robustez | `test_validation.py::test_vizinhos_perturbam_n_e_m_em_10_e_20_por_cento`; `::test_vizinhos_invalidos_sao_descartados`; `::test_regra_de_robustez`; `::test_robustez_do_resultado_segue_a_regra_sobre_os_vizinhos_reportados` | Unitário + integração |
+| 8 a 14 | Pendentes: fatia 3 (checklist, relatório e API) | — |
 
-Os testes dos critérios 1 e 3 foram validados com defeitos simulados
-(executar compra ou venda no fechamento do dia do sinal): todos quebram.
+Testes validados com defeitos simulados: compra ou venda no fechamento do dia
+do sinal (critérios 1 e 3); out-of-sample incluído na seleção final (5);
+dobra escolhendo com todo o in-sample (6) — que sobreviveu à primeira versão
+do teste, por coincidência do vencedor numa grade pequena, e motivou o
+`train_result` em cada dobra; e `>` no lugar de `>=` na regra de robustez (7).
+Todos quebram os testes.

@@ -15,6 +15,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
+from risk_engine.application.compute_metrics import ComputeMetricsUseCase
 from risk_engine.application.compute_metrics_for_ticker import ComputeMetricsForTickerUseCase
 from risk_engine.application.evaluate_order import EvaluateOrderUseCase
 from risk_engine.application.record_fill import RecordFillUseCase
@@ -32,6 +33,15 @@ def compute_metrics_for_ticker(
     """Sharpe/Sortino/Calmar/VaR/drawdown — modo analítico, `float64`."""
     use_case = ComputeMetricsForTickerUseCase()
     return use_case.execute(ticker, start, end, risk_free_rate=risk_free_rate)
+
+
+def compute_metrics_from_returns(returns: list[float], risk_free_rate: float = 0.0) -> RiskMetrics:
+    """Mesmas métricas do modo analítico, a partir de retornos diários já em mãos.
+
+    Usado pelo `backtesting-engine` sobre a curva de patrimônio simulada:
+    uma única definição de Sharpe/Sortino/Calmar/VaR/drawdown na plataforma.
+    """
+    return ComputeMetricsUseCase().execute(returns, risk_free_rate=risk_free_rate)
 
 
 def evaluate_order(
