@@ -24,6 +24,71 @@ O foco é mostrar **engenharia aplicada a um domínio de risco alto**: o dinheir
 é tratado com `Decimal`, o gate de risco bloqueia por padrão quando falha, as
 ordens são idempotentes e cada decisão estrutural tem um ADR.
 
+## Arquitetura
+
+Estado atual e MVP do ciclo 1 ([docs/vision.md](docs/vision.md)). Módulos
+conversam só pela API pública de cada um (`<modulo>.api`); setas tracejadas
+ainda não existem no código.
+
+```mermaid
+flowchart LR
+    quant(["Quant researcher"])
+
+    subgraph ext["Sistemas externos"]
+        av["Alpha Vantage<br/>dados de mercado"]
+        broker["Corretora real<br/>fora do ciclo 1"]
+    end
+
+    subgraph platform["Quant AI Platform: monólito modular (ADR-0001)"]
+        mdl["market-data-lake<br/>ingestão OHLCV + auditoria"]
+        fs["feature-store<br/>retorno, SMA, volatilidade"]
+        bt["backtesting-engine<br/>checklist ADR-0010"]
+        risk["risk-engine<br/>métricas + gate pré-trade"]
+        tapi["trading-api<br/>orquestração de ordens"]
+        sim["SimulatedBrokerAdapter<br/>paper trading"]
+    end
+
+    subgraph stores["Armazenamento"]
+        duck[("DuckDB<br/>barras OHLCV")]
+        pg[("PostgreSQL<br/>auditoria, ledger, circuit breaker<br/>schema via Alembic")]
+        redis[("Redis<br/>features hot-path")]
+    end
+
+    av -->|ingestão batch| mdl
+    mdl --> duck
+    mdl -->|auditoria| pg
+    fs -->|market_data_lake.api| mdl
+    fs --> redis
+    risk -->|market_data_lake.api| mdl
+    risk -->|ledger e circuit breaker| pg
+    tapi -->|BrokerAdapter| sim
+
+    quant -.->|roda backtest| bt
+    bt -.->|feature_store.api| fs
+    bt -.->|estratégia aprovada| tapi
+    tapi -.->|"evaluate_order antes de enviar<br/>record_fill após o fill"| risk
+    tapi -.->|"Won't no ciclo 1"| broker
+
+    classDef done fill:#d3f9d8,stroke:#2b8a3e,color:#1b4332
+    classDef partial fill:#fff3bf,stroke:#e67700,color:#5c3c00
+    classDef planned fill:#f1f3f5,stroke:#868e96,color:#343a40,stroke-dasharray:5 3
+    classDef store fill:#e7f5ff,stroke:#1971c2,color:#0b3d6b
+    classDef external fill:#ffffff,stroke:#495057,color:#212529
+
+    class mdl,fs,risk,sim done
+    class tapi partial
+    class bt planned
+    class duck,pg,redis store
+    class av,broker,quant external
+```
+
+Verde: implementado e testado. Amarelo: parcial (só o port de corretora;
+falta a orquestração). Cinza tracejado: MVP planejado. Camadas internas,
+regras de dependência e o fluxo de uma ordem em paper trading:
+[docs/architecture/estado-atual.md](docs/architecture/estado-atual.md).
+A arquitetura-alvo completa (14 módulos) está nos diagramas
+[C4](docs/architecture/README.md).
+
 ## Estado dos módulos
 
 | Módulo | Status | O que já existe |
@@ -128,7 +193,9 @@ critério de aceite até o teste correspondente.
 ## Documentação
 
 - [Visão e MVP do ciclo atual](docs/vision.md)
-- Arquitetura (C4): [Contexto](docs/architecture/c4/c1-context.md) ·
+- [Arquitetura: estado atual](docs/architecture/estado-atual.md) (camadas,
+  fluxo de uma ordem, pipeline de CI)
+- Arquitetura-alvo (C4): [Contexto](docs/architecture/c4/c1-context.md) ·
   [Containers](docs/architecture/c4/c2-container.md) ·
   [Componentes](docs/architecture/c4/c3-components.md)
 - [ADRs: decisões arquiteturais](docs/adr/README.md)

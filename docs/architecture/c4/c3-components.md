@@ -63,7 +63,7 @@ C4Component
     Rel(backtest, featurestore, "Lê features", "Python API")
     Rel(mlpred, featurestore, "Lê features", "Python API")
     Rel(rl, featurestore, "Lê features", "Python API")
-    Rel(featurestore, ts, "Lê séries históricas", "SQL")
+    Rel(featurestore, datalake, "Lê séries históricas", "market_data_lake.api")
     Rel(featurestore, cache, "Lê/grava features hot-path", "Redis")
 
     Rel(streaming, marketdata, "Ingestão de dados em tempo real", "WebSocket/API")
