@@ -1,6 +1,6 @@
 # backtesting-engine
 
-> Status: 📋 Planejado — aguardando spec (SDD) antes da implementação
+> Status: ✅ Spec aprovada (REQ-02 do ciclo 1) — implementação em seguida
 
 Motor próprio de simulação histórica de estratégias, com custos de transação, slippage e walk-forward validation (ver ADR-0005).
 
@@ -14,9 +14,11 @@ preenchidos — "não verificado" bloqueia a promoção tanto quanto "falhou".
 
 ## Spec
 
-_A ser escrita seguindo Spec-Driven Development, antes de qualquer código._
-A spec precisa modelar o checklist de validação do ADR-0010 como parte do
-contrato de `backtesting-engine.api`, não como relatório à parte.
+[docs/spec.md](docs/spec.md): cruzamento de médias móveis com execução na
+abertura seguinte, custos e slippage, walk-forward, out-of-sample, robustez
+de parâmetro e o checklist de 7 itens (ADR-0010 e
+[ADR-0013](../docs/adr/0013-universo-declarado-no-checklist.md)) como parte
+do contrato de `backtesting_engine.api`.
 
 ## Arquitetura interna
 
