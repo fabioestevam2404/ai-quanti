@@ -1,6 +1,6 @@
 # backtesting-engine
 
-> Status: 🟡 Em implementação (REQ-02) — fatia 1: sinais e simulação de execução; validação e relatório nas próximas fatias
+> Status: 🟡 Em implementação (REQ-02) — fatias 1 e 2: sinais, execução e validação (out-of-sample, walk-forward, robustez); checklist e relatório na fatia 3
 
 Motor próprio de simulação histórica de estratégias, com custos de transação, slippage e walk-forward validation (ver ADR-0005).
 
