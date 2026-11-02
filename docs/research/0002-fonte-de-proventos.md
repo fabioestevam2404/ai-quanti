@@ -82,6 +82,16 @@ Preços de PETR4 no mercado à vista (`TPMERC=010`), normalizados por `FATCOT`:
 01/10/2021 — a separação da participação na XP. O ajuste de uma cisão depende
 do valor do ativo entregue, que a rota não informa: não é um fator simples.
 
+**Fator encontrado (decisão A, 2026-11-02):** a B3 informou ajuste de
+−17,54% na ITUB4 a partir de 04/10/2021, com preço de referência de abertura
+de R$ 24,4654999
+([InfoMoney](https://www.infomoney.com.br/mercados/bdrs-da-xp-passarao-a-ser-negociados-na-b3-nesta-2a-apos-incorporacao-da-xpart-acoes-do-itau-passam-por-reajuste/);
+[Suno](https://www.suno.com.br/noticias/acoes-itau-itub4-reajuste-bdr-xp-xpbr31/)).
+Conferido no COTAHIST de 2021: fechamento de 01/10 (R$ 29,67) × 0,8246 =
+R$ 24,4659, contra os R$ 24,4655 de referência. A abertura real foi R$ 24,75
+(razão 0,834): o salto observado mistura o evento com o movimento do dia, e a
+reconciliação precisa de tolerância.
+
 ## Conclusões
 
 1. **A B3 é a única fonte gratuita com o detalhe necessário** (evento a
@@ -103,7 +113,10 @@ do valor do ativo entregue, que a rota não informa: não é um fator simples.
 | R2 | **Reconciliação obrigatória** contra o COTAHIST: cada evento de capital precisa produzir o salto esperado (tolerância declarada), e todo salto de abertura acima de um limiar sem evento correspondente é reportado | Spec do REQ-01 |
 | R3 | **Tabela de correções curada e versionada** no repositório, com fonte (fato relevante, comunicado) por linha, para eventos ausentes ou errados — começando pelo desdobramento de 2005 da PETR4 | Spec do REQ-01 |
 | R4 | O `market-data-lake` declara, por série: ajustada ou não, método e resultado da reconciliação. O item 7 só fica `verificado` com reconciliação sem pendências | Spec do REQ-01; item 7 do checklist |
-| R5 | Decidir o tratamento da cisão de 2021 da ITUB4 (ver abaixo) | `vision.md`, decisão 2 |
+| R5 | Decidir o tratamento da cisão de 2021 da ITUB4 (ver abaixo). **Decidido em 2026-11-02: opção A**, com o fator da B3 na tabela de correções | `vision.md`, decisão 2 |
+
+**R1 a R4 aceitas em 2026-11-02**, incluindo o uso das rotas não documentadas
+da B3, com os dados guardados localmente.
 
 ### Opções para a ITUB4
 
