@@ -1,6 +1,6 @@
 # Spec — backtesting-engine
 
-**Status:** Proposta — aguarda aprovação antes da implementação (SDD)
+**Status:** Aprovada em 2026-11-02 — pronta para implementação
 **Fase:** 2 — Análise
 **Requisito:** REQ-02 ([visão do ciclo 1](../../docs/vision.md))
 **Depende de:** `feature_store.api` (médias móveis), `market_data_lake.api` (preço de execução), `risk_engine.api` (métricas)
