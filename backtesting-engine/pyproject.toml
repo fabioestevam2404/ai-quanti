@@ -1,0 +1,21 @@
+[project]
+name = "backtesting-engine"
+version = "0.1.0"
+description = "Motor próprio de backtesting com checklist de validação (ADR-0005/0010/0013)."
+requires-python = ">=3.11"
+dependencies = []
+
+# Usa feature_store.api, market_data_lake.api e risk_engine.api, que não são
+# publicados em índice: o uv workspace da raiz instala todos no mesmo
+# ambiente (`uv sync --all-packages`, ADR-0011). Ferramentas de dev/teste:
+# grupo `dev` da raiz.
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
