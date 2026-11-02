@@ -71,6 +71,24 @@ paper trading.
   ([brapi](https://brapi.dev/blog/preco-ajustado-acoes-dividendos-splits-b3)).
 - O checklist do ADR-0010 não tem item explícito para ajuste de preços.
 
+### 5. Teste prático na Alpha Vantage (plano gratuito, 2026-11-02)
+
+Quatro chamadas com a chave do projeto:
+
+| Chamada | Resultado |
+|---|---|
+| `SYMBOL_SEARCH` `PETR4` | `PETR4.SAO` (Brazil/Sao Paolo, BRL): sufixo `.SAO` confirmado |
+| `TIME_SERIES_DAILY` `PETR4.SAO`, `outputsize=compact` | Funciona: 100 barras (2026-06-11 a 2026-10-30) |
+| `TIME_SERIES_DAILY_ADJUSTED` | **Premium**: "This is a premium endpoint" |
+| `TIME_SERIES_DAILY`, `outputsize=full` | **Premium**: "outputsize=full parameter value is a premium feature" |
+
+- No plano gratuito, só ~5 meses de preço **não ajustado**: insuficiente
+  para walk-forward e out-of-sample (itens 4 e 5 do ADR-0010) e sem ajuste
+  por proventos.
+- **Bug latente:** o `AlphaVantageProvider` pede `outputsize=full`; com
+  chave gratuita, a resposta é a mensagem de premium e o provider falha com
+  "Resposta inesperada". Os testes não pegaram porque usam o provider mock.
+
 ## Conclusões
 
 1. **Para o universo do MVP (PETR4, VALE3, ITUB4), nenhuma fonte elimina o
@@ -83,6 +101,9 @@ paper trading.
    data) + proventos para ajuste. É trabalho de dados maior que o MVP.
 3. **Ajuste por proventos é pré-requisito do REQ-01**, independente do viés:
    backtest sobre preço bruto mede retorno errado mesmo com universo perfeito.
+4. **Alpha Vantage gratuita não atende o REQ-01** (achado 5): histórico
+   longo e série ajustada são premium. A decisão 4 da visão precisa ser
+   revista: COTAHIST + ajuste próprio, ou plano pago.
 
 ## Recomendações
 
@@ -90,12 +111,13 @@ paper trading.
 |---|---|---|
 | R1 | Separar, no item 2 do ADR-0010, "verificado" de "**limitação declarada**": universo fixo, escolhido antes do backtest e registrado no relatório, permite **paper trading** (sem capital), mas continua bloqueando a promoção a **capital real** (ADR-0008) | [ADR-0013](../adr/0013-universo-declarado-no-checklist.md) (proposto) |
 | R2 | Acrescentar ao checklist do ADR-0010 a exigência de **preços ajustados por proventos**, com método declarado e verificação em data de evento conhecida | ADR-0013 |
-| R3 | REQ-01 decide a fonte de preço ajustado: Alpha Vantage ajustado (se disponível no plano gratuito) ou COTAHIST + ajuste próprio. Validar com uma chamada de teste antes da spec do REQ-01 | Spec do REQ-01 |
+| R3 | Rever a decisão 4 da visão: a Alpha Vantage gratuita não serve (achado 5). Opções: COTAHIST + ajuste próprio por proventos (oficial, gratuito, desde 1986) ou plano pago da Alpha Vantage | `vision.md`, spec do REQ-01 |
+| R5 | Corrigir o `AlphaVantageProvider` (pede `outputsize=full`, premium) ou retirá-lo, conforme R3; reconhecer a mensagem de premium como erro explícito | REQ-01 |
 | R4 | Universo point-in-time (COTAHIST + carteiras do Ibovespa) entra como **Should do ciclo 2**, pré-requisito para capital real | `vision.md` (revisão do ciclo) |
 
 ## Limitações desta investigação
 
-- Baseada em documentação e fontes secundárias; nenhuma chamada real à
-  Alpha Vantage (sem chave) nem download do COTAHIST foi feito.
+- Achados 1 a 4 baseados em documentação e fontes secundárias; o achado 5
+  foi verificado com chamadas reais. O COTAHIST ainda não foi baixado.
 - Itens marcados "a confirmar" ou "não verificado" acima precisam de teste
   prático antes de virar requisito.
