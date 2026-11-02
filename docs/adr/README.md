@@ -17,6 +17,7 @@ Formato: [template.md](template.md).
 | [0010](0010-backtesting-validation-checklist.md) | Checklist de validação (overfitting/look-ahead) no backtesting-engine | ✅ Aceito |
 | [0011](0011-uv-workspace-lockfile.md) | Ambiente reproduzível com uv workspace e lockfile único | ✅ Aceito |
 | [0012](0012-schema-migrations-alembic.md) | Migrações de schema versionadas com Alembic, por módulo | ✅ Aceito |
+| [0013](0013-universo-declarado-no-checklist.md) | Universo declarado e preços ajustados no checklist de backtest | 📝 Proposto |
 
 ## Convenções
 
