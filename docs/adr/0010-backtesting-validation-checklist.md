@@ -4,6 +4,9 @@
 **Data:** 2026-07-31
 **Contexto do módulo:** `backtesting-engine`
 **Estende:** [ADR-0005](0005-custom-backtesting-engine.md)
+**Alterado por:** [ADR-0013](0013-universo-declarado-no-checklist.md) — item 2
+ganha o estado "limitação declarada" (permite paper, bloqueia capital real) e
+o checklist ganha o item 7 (preços ajustados por proventos)
 
 ## Contexto
 
