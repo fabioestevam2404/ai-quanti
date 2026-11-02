@@ -57,13 +57,13 @@ C4Container
     Rel(mlpred, featurestore, "Lê features")
     Rel(rl, featurestore, "Lê features")
     Rel(backtest, featurestore, "Lê features")
-    Rel(risk, ts, "Lê séries históricas")
+    Rel(risk, datalake, "Lê séries históricas via market_data_lake.api")
 
     Rel(streaming, marketdata, "Consome via WebSocket")
     Rel(streaming, kafka, "Publica eventos")
     Rel(datalake, marketdata, "Ingestão batch/histórica")
     Rel(datalake, ts, "Persiste séries")
-    Rel(featurestore, ts, "Lê dados brutos")
+    Rel(featurestore, datalake, "Lê dados brutos via market_data_lake.api")
     Rel(featurestore, cache, "Serve features hot-path")
 
     Rel(api, pg, "Lê/escreve")
@@ -79,6 +79,9 @@ C4Container
 - **`market-data-lake` vs `streaming-engine`**: o primeiro é a fonte de
   verdade histórica (batch, versionada); o segundo é o caminho de baixa
   latência para sinais em tempo real. Eles convergem no `feature-store`.
+- **Nenhum módulo lê o armazenamento de outro.** `feature-store` e
+  `risk-engine` leem séries pela API do `market-data-lake`, nunca direto do
+  DuckDB/ClickHouse — regra verificada pelo import-linter (ADR-0001).
 - **`feature-store` é o único ponto de leitura de features** tanto para
   treino (`ml-predictions`, `reinforcement-learning`) quanto para simulação
   (`backtesting-engine`) — evita o clássico bug de *train/serve skew*.
