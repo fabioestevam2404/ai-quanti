@@ -8,6 +8,7 @@ resolution-markers = [
 
 [manifest]
 members = [
+    "backtesting-engine",
     "feature-store",
     "market-data-lake",
     "risk-engine",
@@ -111,6 +112,11 @@ sdist = { url = "https://files.pythonhosted.org/packages/a5/ae/136395dfbfe00dfc9
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fe/ba/e2081de779ca30d473f21f5b30e0e737c438205440784c7dfc81efc2b029/async_timeout-5.0.1-py3-none-any.whl", hash = "sha256:39e3809566ff85354557ec2398b55e096c8364bacac9405a7a1fa429e77fe76c", size = 6233, upload-time = "2024-11-06T16:41:37.9Z" },
 ]
+
+[[package]]
+name = "backtesting-engine"
+version = "0.1.0"
+source = { editable = "backtesting-engine" }
 
 [[package]]
 name = "bandit"

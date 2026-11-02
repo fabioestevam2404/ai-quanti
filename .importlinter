@@ -4,6 +4,7 @@ root_packages =
     feature_store
     risk_engine
     trading_api
+    backtesting_engine
 
 [importlinter:contract:market-data-lake-layers]
 name = market-data-lake: domain não conhece application/infrastructure/api
@@ -67,3 +68,29 @@ layers =
 # corretora, ver trading-api/docs/spec.md) — adicionar ao contrato quando
 # a camada de orquestração (kill switch, idempotência, reconciliação)
 # for implementada.
+
+[importlinter:contract:backtesting-engine-layers]
+name = backtesting-engine: domain não conhece application (nem api, quando existir)
+type = layers
+layers =
+    backtesting_engine.application
+    backtesting_engine.domain
+# backtesting_engine.api entra no contrato junto com run_backtest (fatia 3
+# da implementação, ver backtesting-engine/docs/spec.md).
+
+[importlinter:contract:backtesting-engine-so-usa-apis-publicas]
+name = backtesting-engine só importa feature_store.api, market_data_lake.api e risk_engine.api
+type = forbidden
+source_modules =
+    backtesting_engine
+forbidden_modules =
+    feature_store.domain
+    feature_store.application
+    feature_store.infrastructure
+    market_data_lake.domain
+    market_data_lake.application
+    market_data_lake.infrastructure
+    risk_engine.domain
+    risk_engine.application
+    risk_engine.infrastructure
+allow_indirect_imports = True

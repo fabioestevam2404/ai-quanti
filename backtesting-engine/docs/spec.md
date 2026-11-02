@@ -51,6 +51,12 @@ ele não diz que a estratégia é boa.
 | Parâmetro final | Escolhido na grade com todo o período fora do out-of-sample |
 | Robustez | `N` e `M` perturbados em ±10% e ±20% (arredondados, mantendo `N < M`). Aprovado se **todos** os vizinhos tiverem Sharpe ≥ `robustness_min_ratio` (padrão 0,5) × Sharpe do parâmetro final, no mesmo período |
 
+As médias móveis vêm de `feature_store.api.compute_features_from_bars`
+(mudança **aditiva** feita na fatia 1): o mesmo cálculo de
+`get_training_features`, recebendo as barras em mãos. Assim o backtest usa a
+definição de feature do treino sem reimplementá-la, e pode ser testado com
+séries sintéticas.
+
 Métricas de risco (Sharpe, Sortino, Calmar, VaR 95%, drawdown máximo) vêm do
 `risk-engine`. Esta spec inclui uma mudança **aditiva** na `risk_engine.api`:
 `compute_metrics_from_returns(returns, risk_free_rate=0.0) -> RiskMetrics`,
@@ -166,5 +172,16 @@ Declarados no relatório; mudá-los é decisão registrada, não ajuste fino.
 
 ## Rastreabilidade
 
-Preenchida durante a implementação, no mesmo formato das demais specs:
-critério → teste → tipo de evidência.
+Caminhos relativos a `backtesting-engine/tests/`. Critério novo entra nesta
+tabela no mesmo PR; critério sem teste automatizado precisa de justificativa.
+
+| Critério | Evidência | Tipo |
+|---|---|---|
+| 1. Caso conhecido | `test_simulate_execution.py::test_caso_conhecido_reproduz_a_conta_feita_a_mao` (abertura ≠ fechamento do sinal, para distinguir os preços) | Unitário |
+| 2. Sem look-ahead | `test_simulate_execution.py::test_dados_posteriores_a_t_nao_alteram_sinais_nem_patrimonio_ate_t` | Unitário |
+| 3. Execução em `t+1` com custos | `test_simulate_execution.py::test_compra_executa_na_abertura_seguinte_nunca_no_fechamento_do_sinal`; `::test_venda_executa_na_abertura_seguinte_com_slippage_contra`; `::test_sinal_no_ultimo_dia_nao_executa_e_posicao_aberta_e_marcada_a_mercado` | Unitário |
+| 4. Aquecimento | `test_signals.py::test_aquecimento_ignora_sma_de_janela_parcial` | Unitário |
+| 5 a 14 | Pendentes: fatias 2 (validação) e 3 (checklist, relatório e API) | — |
+
+Os testes dos critérios 1 e 3 foram validados com defeitos simulados
+(executar compra ou venda no fechamento do dia do sinal): todos quebram.

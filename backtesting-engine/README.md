@@ -1,6 +1,6 @@
 # backtesting-engine
 
-> Status: ✅ Spec aprovada (REQ-02 do ciclo 1) — implementação em seguida
+> Status: 🟡 Em implementação (REQ-02) — fatia 1: sinais e simulação de execução; validação e relatório nas próximas fatias
 
 Motor próprio de simulação histórica de estratégias, com custos de transação, slippage e walk-forward validation (ver ADR-0005).
 

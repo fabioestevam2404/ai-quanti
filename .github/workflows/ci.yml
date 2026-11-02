@@ -60,16 +60,16 @@ jobs:
       # no pyproject.toml da raiz e aos caminhos de lint/mypy/bandit/pytest.
 
       - name: Lint (ruff)
-        run: uv run --locked ruff check market-data-lake feature-store risk-engine trading-api
+        run: uv run --locked ruff check market-data-lake feature-store risk-engine trading-api backtesting-engine
 
       - name: Format (ruff)
-        run: uv run --locked ruff format --check market-data-lake feature-store risk-engine trading-api
+        run: uv run --locked ruff format --check market-data-lake feature-store risk-engine trading-api backtesting-engine
 
       - name: Type-check (mypy)
-        run: uv run --locked mypy market-data-lake/src feature-store/src risk-engine/src trading-api/src
+        run: uv run --locked mypy market-data-lake/src feature-store/src risk-engine/src trading-api/src backtesting-engine/src
 
       - name: Security scan (bandit)
-        run: uv run --locked bandit -r market-data-lake/src feature-store/src risk-engine/src trading-api/src
+        run: uv run --locked bandit -r market-data-lake/src feature-store/src risk-engine/src trading-api/src backtesting-engine/src
 
       # Audita o lockfile (o que de fato roda), sem os módulos do workspace —
       # eles não existem no PyPI e não devem ser consultados lá.
@@ -92,7 +92,7 @@ jobs:
           done
 
       - name: Tests (contra Postgres/Redis/DuckDB reais; trading-api não precisa de infra)
-        run: uv run --locked pytest market-data-lake feature-store risk-engine trading-api --cov
+        run: uv run --locked pytest market-data-lake feature-store risk-engine trading-api backtesting-engine --cov
 
   import-boundaries:
     runs-on: ubuntu-latest
