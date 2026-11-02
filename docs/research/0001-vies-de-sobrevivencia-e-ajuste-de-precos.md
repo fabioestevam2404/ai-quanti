@@ -109,7 +109,7 @@ Quatro chamadas com a chave do projeto:
 
 | # | Recomendação | Onde |
 |---|---|---|
-| R1 | Separar, no item 2 do ADR-0010, "verificado" de "**limitação declarada**": universo fixo, escolhido antes do backtest e registrado no relatório, permite **paper trading** (sem capital), mas continua bloqueando a promoção a **capital real** (ADR-0008) | [ADR-0013](../adr/0013-universo-declarado-no-checklist.md) (proposto) |
+| R1 | Separar, no item 2 do ADR-0010, "verificado" de "**limitação declarada**": universo fixo, escolhido antes do backtest e registrado no relatório, permite **paper trading** (sem capital), mas continua bloqueando a promoção a **capital real** (ADR-0008) | [ADR-0013](../adr/0013-universo-declarado-no-checklist.md) (aceito em 2026-11-02) |
 | R2 | Acrescentar ao checklist do ADR-0010 a exigência de **preços ajustados por proventos**, com método declarado e verificação em data de evento conhecida | ADR-0013 |
 | R3 | Rever a decisão 4 da visão: a Alpha Vantage gratuita não serve (achado 5). **Decidido em 2026-11-02: COTAHIST + ajuste próprio por proventos** (alternativa descartada: plano pago da Alpha Vantage) | `vision.md` (decisão 4) |
 | R5 | Corrigir o `AlphaVantageProvider` (pede `outputsize=full`, premium) ou retirá-lo, conforme R3; reconhecer a mensagem de premium como erro explícito | REQ-01 |

@@ -1,6 +1,6 @@
 # ADR-0013: Universo declarado e preços ajustados no checklist de backtest
 
-**Status:** Proposto
+**Status:** Aceito
 **Data:** 2026-11-02
 **Contexto do módulo:** `backtesting-engine`, `trading-api` (promoção de estratégia)
 **Altera:** [ADR-0010](0010-backtesting-validation-checklist.md) (itens do checklist)
