@@ -4,7 +4,7 @@ Plataforma modular de **trading quantitativo** que integra Engenharia de Dados,
 Machine Learning, IA Generativa e Engenharia de Software para pesquisa,
 backtesting, gestão de risco e execução de estratégias.
 
-> **Status:** 🟡 em desenvolvimento, ambiente local/dev. Quatro módulos com
+> **Status:** 🟡 em desenvolvimento, ambiente local/dev. Cinco módulos com
 > código e testes; os demais têm escopo definido e aguardam spec.
 > Nenhum módulo executa ordens reais: a execução existe apenas como paper
 > trading simulado, sem credenciais de corretora.
@@ -63,9 +63,11 @@ flowchart LR
     risk -->|ledger e circuit breaker| pg
     tapi -->|BrokerAdapter| sim
 
-    quant -.->|roda backtest| bt
-    bt -.->|feature_store.api| fs
-    bt -.->|estratégia aprovada| tapi
+    quant -->|roda backtest| bt
+    bt -->|"preços: market_data_lake.api"| mdl
+    bt -->|"médias: feature_store.api"| fs
+    bt -->|"métricas: risk_engine.api"| risk
+    bt -.->|"estratégia apta para paper"| tapi
     tapi -.->|"evaluate_order antes de enviar<br/>record_fill após o fill"| risk
     tapi -.->|"Won't no ciclo 1"| broker
 
@@ -75,15 +77,14 @@ flowchart LR
     classDef store fill:#e7f5ff,stroke:#1971c2,color:#0b3d6b
     classDef external fill:#ffffff,stroke:#495057,color:#212529
 
-    class mdl,fs,risk,sim done
+    class mdl,fs,risk,sim,bt done
     class tapi partial
-    class bt planned
     class duck,pg,redis store
     class av,broker,quant external
 ```
 
 Verde: implementado e testado. Amarelo: parcial (só o port de corretora;
-falta a orquestração). Cinza tracejado: MVP planejado. Camadas internas,
+falta a orquestração). Setas tracejadas: MVP planejado (REQ-03). Camadas internas,
 regras de dependência e o fluxo de uma ordem em paper trading:
 [docs/architecture/estado-atual.md](docs/architecture/estado-atual.md).
 A arquitetura-alvo completa (14 módulos) está nos diagramas
@@ -96,9 +97,10 @@ A arquitetura-alvo completa (14 módulos) está nos diagramas
 | [`market-data-lake`](market-data-lake/) | 🟡 v1 local | OHLCV diário (provider mock + Alpha Vantage), DuckDB, auditoria de ingestão em Postgres |
 | [`feature-store`](feature-store/) | 🟡 v1 local | Retorno diário, SMA e volatilidade; leitura online em Redis |
 | [`risk-engine`](risk-engine/) | 🟡 v1 local | Sharpe, Sortino, Calmar, VaR, drawdown + gate pré-trade fail-closed com circuit breaker |
+| [`backtesting-engine`](backtesting-engine/) | 🟡 v1 local | Cruzamento de médias com execução em `t+1`, custos e slippage; out-of-sample, walk-forward e robustez; relatório com checklist de 7 itens e elegibilidade para paper/capital real (ADR-0010/0013) |
 | [`trading-api`](trading-api/) | 🟡 parcial | Port `BrokerAdapter` e `SimulatedBrokerAdapter` (paper trading, idempotente por `client_order_id`) |
 | [`infrastructure`](infrastructure/) | 🟡 parcial | Docker Compose local (Postgres + Redis) |
-| `backtesting-engine`, `portfolio-optimizer`, `ml-predictions`, `reinforcement-learning`, `financial-rag`, `investment-copilot`, `streaming-engine`, `trading-dashboard`, `monitoring`, `notebooks` | 📋 planejado | README com escopo; código só depois da spec |
+| `portfolio-optimizer`, `ml-predictions`, `reinforcement-learning`, `financial-rag`, `investment-copilot`, `streaming-engine`, `trading-dashboard`, `monitoring`, `notebooks` | 📋 planejado | README com escopo; código só depois da spec |
 
 ## Como executar localmente
 
@@ -116,7 +118,7 @@ uv sync --all-packages
 
 # 3. Testes (contra Postgres/Redis reais, em banco exclusivo de teste;
 #    as fixtures aplicam as migrações no banco de teste)
-uv run pytest market-data-lake feature-store risk-engine trading-api
+uv run pytest market-data-lake feature-store risk-engine trading-api backtesting-engine
 
 # 4. Para usar os módulos em dev: schema do banco de dev via migrações
 uv run alembic -c market-data-lake/alembic.ini upgrade head

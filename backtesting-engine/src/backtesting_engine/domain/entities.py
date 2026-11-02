@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Iterable
+from dataclasses import dataclass, field
 from datetime import date
+from decimal import Decimal
+from enum import StrEnum
 
 BPS = 10_000
+CHECKLIST_SIZE = 7
 
 
 @dataclass(frozen=True, slots=True)
@@ -167,3 +171,113 @@ class ValidationResult:
     in_sample_result: PeriodResult
     out_of_sample_result: PeriodResult | None  # None = dados insuficientes
     robustness: RobustnessResult
+
+
+class ChecklistStatus(StrEnum):
+    """Estados de um item do checklist (ADR-0010, alterado pelo ADR-0013)."""
+
+    VERIFICADO = "verificado"
+    LIMITACAO_DECLARADA = "limitação declarada"  # só o item 2 (universo)
+    NAO_VERIFICADO = "não verificado"
+    FALHOU = "falhou"
+
+
+@dataclass(frozen=True, slots=True)
+class ChecklistItem:
+    number: int
+    name: str
+    status: ChecklistStatus
+    evidence: str
+
+
+UNIVERSE_ITEM = 2
+
+
+def is_eligible_for_paper(items: Iterable[ChecklistItem]) -> bool:
+    """Todos os 7 itens verificados; o item 2 admite limitação declarada (ADR-0013)."""
+    items = tuple(items)
+    return len(items) == CHECKLIST_SIZE and all(
+        item.status is ChecklistStatus.VERIFICADO
+        or (item.number == UNIVERSE_ITEM and item.status is ChecklistStatus.LIMITACAO_DECLARADA)
+        for item in items
+    )
+
+
+def is_eligible_for_real_capital(items: Iterable[ChecklistItem]) -> bool:
+    """Todos os 7 itens verificados. Necessário, não suficiente: o ADR-0008
+    ainda exige o período em paper trading."""
+    items = tuple(items)
+    return len(items) == CHECKLIST_SIZE and all(
+        item.status is ChecklistStatus.VERIFICADO for item in items
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class UniverseDeclaration:
+    """Universo escolhido antes do backtest (item 2 do checklist).
+
+    `point_in_time=False` significa universo fixo, escolhido entre ativos
+    existentes na data `selected_on`: o relatório declara a limitação.
+    """
+
+    tickers: tuple[str, ...]
+    selection_criterion: str
+    selected_on: date
+    point_in_time: bool = False
+
+    def __post_init__(self) -> None:
+        if not self.tickers:
+            raise ValueError("universo precisa de ao menos um ticker")
+        if len(set(self.tickers)) != len(self.tickers):
+            raise ValueError(f"tickers repetidos no universo: {self.tickers}")
+
+
+@dataclass(frozen=True, slots=True)
+class BacktestConfig:
+    universe: UniverseDeclaration
+    start: date
+    end: date
+    initial_capital: Decimal
+    costs: CostModel
+    validation: ValidationConfig = field(default_factory=ValidationConfig)
+
+    def __post_init__(self) -> None:
+        # Entrada monetária da API: Decimal, como nas demais fronteiras (ADR-0004).
+        if not isinstance(self.initial_capital, Decimal):
+            received = type(self.initial_capital).__name__
+            raise TypeError(f"initial_capital precisa ser Decimal, recebido {received}")
+        if self.initial_capital <= 0:
+            raise ValueError("initial_capital precisa ser positivo")
+        if self.start >= self.end:
+            raise ValueError(f"start ({self.start}) precisa ser anterior a end ({self.end})")
+
+
+@dataclass(frozen=True, slots=True)
+class MonetarySummary:
+    final_equity: Decimal
+    total_costs: Decimal
+
+
+@dataclass(frozen=True, slots=True)
+class TradeStats:
+    closed_trades: int
+    win_rate: float | None  # None = nenhuma operação fechada
+    profit_factor: float | None  # None = sem operação perdedora (divisão por zero)
+
+
+@dataclass(frozen=True, slots=True)
+class BacktestReport:
+    config: BacktestConfig
+    validation: ValidationResult
+    checklist: tuple[ChecklistItem, ...]
+    in_sample_money: MonetarySummary
+    out_of_sample_money: MonetarySummary | None
+    in_sample_trades: TradeStats
+
+    @property
+    def apto_para_paper(self) -> bool:
+        return is_eligible_for_paper(self.checklist)
+
+    @property
+    def apto_para_capital_real(self) -> bool:
+        return is_eligible_for_real_capital(self.checklist)

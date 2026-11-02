@@ -1,6 +1,35 @@
 # backtesting-engine
 
-> Status: 🟡 Em implementação (REQ-02) — fatias 1 e 2: sinais, execução e validação (out-of-sample, walk-forward, robustez); checklist e relatório na fatia 3
+> Status: 🟡 v1 local (REQ-02 implementado) — relatório com checklist de 7 itens; o item 7 (preços ajustados) fica "não verificado" até o REQ-01
+
+## Uso
+
+```python
+from datetime import date
+from decimal import Decimal
+
+from backtesting_engine.api import (
+    BacktestConfig, CostModel, UniverseDeclaration, run_backtest,
+)
+
+report = run_backtest(BacktestConfig(
+    universe=UniverseDeclaration(
+        tickers=("PETR4", "VALE3", "ITUB4"),
+        selection_criterion="ações líquidas da B3 listadas hoje",
+        selected_on=date(2026, 11, 1),
+    ),
+    start=date(2015, 1, 1),
+    end=date(2025, 12, 31),
+    initial_capital=Decimal("100000.00"),
+    costs=CostModel(cost_bps=5, slippage_bps=5),
+))
+
+for item in report.checklist:
+    print(item.number, item.status, item.evidence)
+print(report.apto_para_paper, report.apto_para_capital_real)
+```
+
+Os preços vêm do `market-data-lake`, que precisa ter o período ingerido.
 
 Motor próprio de simulação histórica de estratégias, com custos de transação, slippage e walk-forward validation (ver ADR-0005).
 

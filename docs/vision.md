@@ -48,7 +48,7 @@ seja ele qual for, é confiável — e que nenhuma ordem passa sem o gate.
 | ID | Capacidade | Prioridade | Situação |
 |---|---|---|---|
 | REQ-01 | Dados históricos confiáveis para o universo do MVP: ingestão real, persistida, auditada, reprocessável | **Must** | 🟡 Base pronta (`market-data-lake`, `feature-store`); falta ingestão real do universo escolhido |
-| REQ-02 | Backtest de uma estratégia de referência com relatório que preenche os 6 itens do ADR-0010 (custos, walk-forward, out-of-sample, robustez…) | **Must** | 📋 `backtesting-engine` sem spec |
+| REQ-02 | Backtest de uma estratégia de referência com relatório que preenche os itens do checklist (ADR-0010, alterado pelo ADR-0013: custos, walk-forward, out-of-sample, robustez, preços ajustados…) | **Must** | ✅ Implementado ([spec](../backtesting-engine/docs/spec.md)); item 7 aguarda o REQ-01 |
 | REQ-03 | Paper trading da mesma estratégia: toda ordem consulta o gate antes de sair; fills alimentam o ledger; idempotência e reconciliação (ADR-0007) | **Must** | 🟡 Gate e port de corretora prontos; falta a orquestração no `trading-api` |
 
 ### Demais itens
@@ -95,7 +95,7 @@ exige o processo do ADR-0008 e um adapter de corretora real, fora deste ciclo.
 | Fonte de proventos (desdobramentos, grupamentos, dividendos) para ajustar o COTAHIST ainda não identificada | Sem ela, o item 7 do checklist (ADR-0013) fica "não verificado" e bloqueia paper | Investigação curta (0002) antes da spec do REQ-01: fontes oficiais da B3/CVM, formato e cobertura para o universo do MVP |
 | Acesso aos arquivos da B3 pode falhar por rede ou mudança de URL | Ingestão interrompida | Ingestão idempotente por arquivo anual; cache local dos ZIPs baixados; erro explícito com a URL tentada |
 | Paper trading em tempo real leva semanas (ADR-0008 pede ≥ 20 pregões) | Ciclo longo para o critério de saída | Decisão 3: replay valida o fluxo dentro das 8 semanas; o tempo real roda depois, sem bloquear o restante |
-| `backtesting-engine` próprio (ADR-0005) é o maior bloco ainda não iniciado | Concentra o risco de prazo do ciclo | Spec enxuta: uma estratégia, um timeframe (diário), custos simples e fixos |
+| `backtesting-engine` próprio (ADR-0005) era o maior bloco do ciclo | Concentrava o risco de prazo | **Resolvido:** implementado em três fatias (2026-11-02). Atenção ao tempo de execução com a grade completa e anos de dados reais; vetorizar se medido (ADR-0005) |
 
 ## Decisões do ciclo
 
@@ -112,8 +112,9 @@ mudar uma delas é mudança de escopo e volta a este documento.
 
 ### Ordem de execução
 
-1. **REQ-02 — spec do `backtesting-engine`**, começando pela investigação
-   do viés de sobrevivência (maior risco do ciclo).
+1. ✅ **REQ-02 — `backtesting-engine`**: investigação do viés de
+   sobrevivência, spec e implementação em três fatias (concluído em
+   2026-11-02).
 2. **REQ-01 — ingestão real** do universo a partir do COTAHIST, com ajuste
    por proventos, precedida da investigação 0002 (fonte de proventos). A
    suíte continua usando o provider mock; o `AlphaVantageProvider` é

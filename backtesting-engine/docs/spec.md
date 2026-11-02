@@ -1,6 +1,6 @@
 # Spec — backtesting-engine
 
-**Status:** Aprovada em 2026-11-02 — pronta para implementação
+**Status:** Implementada (fatias 1 a 3) — aprovada em 2026-11-02
 **Fase:** 2 — Análise
 **Requisito:** REQ-02 ([visão do ciclo 1](../../docs/vision.md))
 **Depende de:** `feature_store.api` (médias móveis), `market_data_lake.api` (preço de execução), `risk_engine.api` (métricas)
@@ -195,11 +195,24 @@ tabela no mesmo PR; critério sem teste automatizado precisa de justificativa.
 | 5. Out-of-sample isolado | `test_validation.py::test_out_of_sample_nao_influencia_a_selecao`; `::test_planejamento_reserva_o_fim_e_dobras_nao_se_sobrepoem` | Integração (via APIs de feature-store e risk-engine) |
 | 6. Walk-forward só com treino | `test_validation.py::test_cada_dobra_escolhe_so_com_o_proprio_treino`; `::test_planejamento_reserva_o_fim_e_dobras_nao_se_sobrepoem` | Integração |
 | 7. Robustez | `test_validation.py::test_vizinhos_perturbam_n_e_m_em_10_e_20_por_cento`; `::test_vizinhos_invalidos_sao_descartados`; `::test_regra_de_robustez`; `::test_robustez_do_resultado_segue_a_regra_sobre_os_vizinhos_reportados` | Unitário + integração |
-| 8 a 14 | Pendentes: fatia 3 (checklist, relatório e API) | — |
+| 8. Checklist completo e elegibilidade | `test_checklist.py::test_sete_itens_em_ordem`; `::test_elegibilidade_com_um_item_fora_do_verificado` (28 combinações item × estado); `::test_limitacao_no_item_2_nao_compensa_outro_item_ruim`; `::test_checklist_incompleto_nunca_e_elegivel`; `::test_item_1_reprova_sinal_que_espia_o_futuro`; `::test_item_4_dobra_sem_teste_fica_nao_verificado`; `::test_item_5_sem_out_of_sample_fica_nao_verificado`; `::test_item_6_segue_a_regra_de_robustez` | Unitário |
+| 9. Item 7 honesto | `test_checklist.py::test_item_7_nao_verificado_enquanto_a_fonte_nao_declara_ajuste`; `test_run_backtest.py::test_relatorio_tem_checklist_completo_e_elegibilidade` | Unitário |
+| 10. Custo zero reprova | `test_checklist.py::test_item_3_custo_zero_reprova` | Unitário |
+| 11. Determinismo | `test_run_backtest.py::test_relatorio_e_deterministico`; `test_validation.py::test_validacao_e_deterministica` | Unitário |
+| 12. Fronteira Decimal | `test_money.py::test_converte_para_centavos_com_arredondamento_conhecido`; `::test_rejeita_valor_nao_finito`; `test_run_backtest.py::test_valores_monetarios_do_relatorio_sao_decimal_em_centavos`; `::test_capital_inicial_precisa_ser_decimal` | Unitário |
+| 13. Fronteiras de módulo | Estrutural: contratos `backtesting-engine-layers` e `backtesting-engine-so-usa-apis-publicas` no `.importlinter`, verificados pelo job `import-boundaries` do CI | Estrutural |
+| 14. Infra real | `test_run_backtest.py::test_ponta_a_ponta_pelas_apis_contra_infra_real` (ingestão via `market_data_lake.api` em DuckDB e Postgres reais) | Integração |
 
 Testes validados com defeitos simulados: compra ou venda no fechamento do dia
 do sinal (critérios 1 e 3); out-of-sample incluído na seleção final (5);
 dobra escolhendo com todo o in-sample (6) — que sobreviveu à primeira versão
 do teste, por coincidência do vencedor numa grade pequena, e motivou o
 `train_result` em cada dobra; e `>` no lugar de `>=` na regra de robustez (7).
-Todos quebram os testes.
+Na fatia 3: checagem de look-ahead que sempre aprova (pega só pelo teste
+negativo com sinal que espia o futuro, escrito para isso); limitação
+declarada aceita em qualquer item; custo zero aceito; robustez não aplicável
+tratada como aprovada; item 7 aprovado sem declaração da fonte; e conversão
+monetária a partir do valor binário do float. Todos quebram os testes.
+
+Conversão monetária: `to_money` parte da representação curta do float
+(`str`) e arredonda meio centavo para longe do zero (`ROUND_HALF_UP`).
