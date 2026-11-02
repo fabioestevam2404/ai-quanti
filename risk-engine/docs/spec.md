@@ -104,3 +104,21 @@ camadas internas.
    dos preços).
 5. Testes rodam contra Postgres real via `docker-compose` — nenhum mock de
    banco.
+
+## Rastreabilidade
+
+Cada critério de aceite e o teste que o comprova (caminhos relativos a
+`risk-engine/tests/`). Critério novo entra nesta tabela no mesmo PR;
+critério sem teste automatizado precisa de justificativa aqui.
+
+| Critério | Evidência | Tipo |
+|---|---|---|
+| 1. Fail-closed | `test_evaluate_order_use_case.py::test_falha_no_ledger_e_fail_closed_bloqueia` | Unitário (ledger e breaker que falham) |
+| 2. Breaker bloqueia qualquer ordem até reset ou virada da data | `test_evaluate_order_use_case.py::test_circuit_breaker_ja_disparado_bloqueia_qualquer_ordem`; `test_postgres_circuit_breaker.py::test_reset_manual_limpa_o_disparo`; `::test_disparo_nao_vale_para_outro_dia` | Integração |
+| 3. Gate e ledger só em `Decimal` | `test_decimal_boundary.py` — `float` rejeitado com `TypeError` em `OrderProposal`, `RiskLimits` e `record_fill` (sem alterar o ledger); ledger devolve `Decimal` exato | Unitário + integração |
+| 4. Métricas determinísticas | `test_compute_metrics_for_ticker.py::test_mesmo_periodo_produz_as_mesmas_metricas`; `test_compute_metrics.py::test_e_deterministico` | Integração + unitário |
+| 5. Postgres real, sem mock de banco | Estrutural: fixture `postgres_dsn` (Postgres real, schema via migrações — ADR-0012). Exceção deliberada: o teste do critério 1 usa dublês que lançam erro, porque simular indisponibilidade é o objetivo | Estrutural |
+
+`float` com `Decimal` em `evaluate_order` gera `TypeError` na construção de
+`OrderProposal`, antes do gate: é erro de programação do caller, não decisão
+de risco — nunca resulta em `ALLOW`.

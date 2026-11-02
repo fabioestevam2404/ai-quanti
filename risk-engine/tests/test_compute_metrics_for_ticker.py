@@ -21,6 +21,19 @@ def test_calcula_metricas_a_partir_do_market_data_lake(
     assert metrics.max_drawdown <= 0.0
 
 
+def test_mesmo_periodo_produz_as_mesmas_metricas(
+    market_data_duckdb_path: Path, postgres_dsn: str
+) -> None:
+    # Critério 4: determinístico de ponta a ponta (leitura do market-data-lake + cálculo).
+    ingest_daily_bars("PETR4", date(2026, 8, 3), date(2026, 8, 21), source="mock")
+    use_case = ComputeMetricsForTickerUseCase()
+
+    first = use_case.execute("PETR4", date(2026, 8, 3), date(2026, 8, 21))
+    second = use_case.execute("PETR4", date(2026, 8, 3), date(2026, 8, 21))
+
+    assert first == second
+
+
 def test_historico_insuficiente_leva_a_erro_explicito(
     market_data_duckdb_path: Path, postgres_dsn: str
 ) -> None:

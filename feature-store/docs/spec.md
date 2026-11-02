@@ -63,3 +63,16 @@ só podem importar `feature_store.api` — nunca `domain`/`application`/
    lista vazia / `None`, nunca lança exceção não tratada.
 4. Testes rodam contra Redis real via `docker-compose` — nenhum mock de
    cache.
+
+## Rastreabilidade
+
+Cada critério de aceite e o teste que o comprova (caminhos relativos a
+`feature-store/tests/`). Critério novo entra nesta tabela no mesmo PR;
+critério sem teste automatizado precisa de justificativa aqui.
+
+| Critério | Evidência | Tipo |
+|---|---|---|
+| 1. Features determinísticas | `test_compute_features.py::test_e_deterministico_para_mesma_janela` | Unitário |
+| 2. Materializa em Redis real e lê exatamente o gravado | `test_online_features_api.py::test_materializa_no_redis_real_e_le_exatamente_o_gravado` (via `api`); `test_redis_hot_path_store.py::test_salva_e_le_do_redis_real` | Integração |
+| 3. Ticker sem dados → lista vazia / `None`, sem exceção | `test_get_training_features_use_case.py::test_ticker_sem_dados_retorna_lista_vazia`; `test_online_features_api.py::test_materializar_ticker_sem_dados_retorna_none_sem_erro`; `test_redis_hot_path_store.py::test_ticker_sem_dado_retorna_none` | Integração |
+| 4. Redis real, sem mock de cache | Estrutural: fixture `redis_url` (Redis real, db 15); no CI, infra indisponível falha a suíte (`QUANT_REQUIRE_INTEGRATION=1`) | Estrutural |

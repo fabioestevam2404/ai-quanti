@@ -63,3 +63,16 @@ diretamente — apenas de `market_data_lake.api` (fronteira validada por
    mesmo em caso de falha do provider.
 4. Testes rodam contra DuckDB (arquivo real) e Postgres real via
    `docker-compose` — nenhum mock de banco.
+
+## Rastreabilidade
+
+Cada critério de aceite e o teste que o comprova (caminhos relativos a
+`market-data-lake/tests/`). Critério novo entra nesta tabela no mesmo PR;
+critério sem teste automatizado precisa de justificativa aqui.
+
+| Critério | Evidência | Tipo |
+|---|---|---|
+| 1. Mock sem variável de ambiente | `test_ingest_daily_bars_use_case.py::test_api_ingere_com_mock_sem_chave_de_api` | Integração (via `api`) |
+| 2. Persistência no processo e entre execuções | `test_duckdb_bar_repository.py::test_persiste_entre_conexoes_diferentes`; `test_ingest_daily_bars_use_case.py::test_api_ingere_com_mock_sem_chave_de_api` (leitura via `get_price_series`) | Integração |
+| 3. Auditoria em Postgres, inclusive em falha | `test_ingest_daily_bars_use_case.py::test_ingestao_com_sucesso_persiste_barras_e_auditoria`; `::test_ingestao_com_falha_registra_auditoria_e_propaga_erro` (contam linhas na tabela de auditoria) | Integração |
+| 4. Infra real, sem mock de banco | Estrutural: fixtures `duckdb_path` (arquivo em disco) e `postgres_dsn` (Postgres real, schema via migrações — ADR-0012); no CI, infra indisponível falha a suíte (`QUANT_REQUIRE_INTEGRATION=1`) | Estrutural |
