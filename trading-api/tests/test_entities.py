@@ -39,6 +39,30 @@ def test_limit_order_exige_limit_price() -> None:
         )
 
 
+def test_quantity_float_e_rejeitada() -> None:
+    # Critério 3: todo valor monetário/quantidade no port é Decimal (ADR-0004).
+    with pytest.raises(TypeError, match="quantity"):
+        OrderRequest(
+            client_order_id="abc",
+            ticker="PETR4",
+            side=Side.BUY,
+            quantity=10.0,  # type: ignore[arg-type]
+            order_type=OrderType.MARKET,
+        )
+
+
+def test_limit_price_float_e_rejeitado() -> None:
+    with pytest.raises(TypeError, match="limit_price"):
+        OrderRequest(
+            client_order_id="abc",
+            ticker="PETR4",
+            side=Side.BUY,
+            quantity=Decimal("10"),
+            order_type=OrderType.LIMIT,
+            limit_price=30.5,  # type: ignore[arg-type]
+        )
+
+
 def test_market_order_rejeita_limit_price() -> None:
     with pytest.raises(ValueError, match="não deve ser informado"):
         OrderRequest(

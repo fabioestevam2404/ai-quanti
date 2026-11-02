@@ -6,6 +6,16 @@ from decimal import Decimal
 from enum import StrEnum
 
 
+def require_decimal(name: str, value: object) -> None:
+    """Rejeita `float` (ou qualquer não-`Decimal`) no gate e no ledger (ADR-0004).
+
+    Tipagem estática não basta: um `float` vindo de um caller não tipado
+    passaria em silêncio e seria persistido com erro de representação.
+    """
+    if not isinstance(value, Decimal):
+        raise TypeError(f"{name} precisa ser Decimal, recebido {type(value).__name__}")
+
+
 class Side(StrEnum):
     BUY = "buy"
     SELL = "sell"
@@ -28,6 +38,8 @@ class OrderProposal:
     estimated_price: Decimal
 
     def __post_init__(self) -> None:
+        require_decimal("quantity", self.quantity)
+        require_decimal("estimated_price", self.estimated_price)
         if self.quantity <= 0:
             raise ValueError(f"quantity precisa ser positiva: {self.quantity}")
         if self.estimated_price <= 0:
@@ -48,6 +60,8 @@ class RiskLimits:
     max_daily_loss: Decimal
 
     def __post_init__(self) -> None:
+        require_decimal("max_exposure_per_ticker", self.max_exposure_per_ticker)
+        require_decimal("max_daily_loss", self.max_daily_loss)
         if self.max_exposure_per_ticker <= 0:
             raise ValueError("max_exposure_per_ticker precisa ser positivo")
         if self.max_daily_loss <= 0:

@@ -6,6 +6,13 @@ from decimal import Decimal
 from enum import StrEnum
 
 
+def _require_decimal(name: str, value: object) -> None:
+    # Critério 3 da spec: todo valor monetário/quantidade no port é Decimal
+    # (ADR-0004). Tipagem estática não pega caller não tipado.
+    if not isinstance(value, Decimal):
+        raise TypeError(f"{name} precisa ser Decimal, recebido {type(value).__name__}")
+
+
 class Side(StrEnum):
     BUY = "buy"
     SELL = "sell"
@@ -52,6 +59,9 @@ class OrderRequest:
     def __post_init__(self) -> None:
         if not self.client_order_id:
             raise ValueError("client_order_id é obrigatório — chave de idempotência (ADR-0007)")
+        _require_decimal("quantity", self.quantity)
+        if self.limit_price is not None:
+            _require_decimal("limit_price", self.limit_price)
         if self.quantity <= 0:
             raise ValueError(f"quantity precisa ser positiva: {self.quantity}")
         if self.order_type == OrderType.LIMIT and self.limit_price is None:
