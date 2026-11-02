@@ -1,8 +1,10 @@
 # Visão e MVP — ciclo 1
 
-**Status:** Rascunho — 5 decisões pendentes (ver [Decisões em aberto](#decisões-em-aberto))
+**Status:** Aceito — decisões registradas em [Decisões do ciclo](#decisões-do-ciclo)
 **Data:** 2026-11-01
-**Revisar quando:** uma decisão em aberto for tomada, ou ao fim do ciclo.
+**Ciclo:** 2026-11-02 a 2026-12-27 (REQ-01 a REQ-03 em replay), seguido de
+paper trading em tempo real
+**Revisar quando:** ao fim do ciclo, ou se um risco abaixo invalidar uma decisão.
 
 ## Problema
 
@@ -74,8 +76,9 @@ roadmap do [README](../README.md) e voltam à priorização na revisão do ciclo
 
 - A estratégia de referência tem relatório de backtest com os 6 itens do
   ADR-0010 respondidos — "não verificado" conta como reprovado.
-- Paper trading rodou pelo período definido na decisão 3, com zero ordens
-  fora do gate (QA-01) e zero divergências de reconciliação não explicadas.
+- Paper trading rodou em replay sobre o histórico e depois por 20 pregões em
+  tempo real (decisão 3), com zero ordens fora do gate (QA-01) e zero
+  divergências de reconciliação não explicadas.
 - REQ-01 a REQ-03 com critérios de aceite nas specs e na matriz de
   rastreabilidade, todos verdes no CI.
 
@@ -86,27 +89,33 @@ exige o processo do ADR-0008 e um adapter de corretora real, fora deste ciclo.
 
 | Risco | Impacto | Mitigação proposta |
 |---|---|---|
-| Viés de sobrevivência exige o histórico de ativos que saíram do índice; fontes gratuitas raramente têm | Item 2 do ADR-0010 fica "não verificado" e bloqueia a promoção a paper | Investigação curta antes da spec do backtest; se inviável, registrar a limitação e restringir o universo de forma declarada (decisão 2) |
+| Viés de sobrevivência exige o histórico de ativos que saíram do índice; fontes gratuitas raramente têm | Item 2 do ADR-0010 fica "não verificado" e bloqueia a promoção a paper | Investigação curta antes da spec do backtest. Se inviável, a spec define como o relatório declara a limitação de um universo fixo (decisão 2) e se isso exige um ADR que ajuste o item 2 do ADR-0010 para universos declarados |
 | Limites de uso da API de dados (Alpha Vantage) | Ingestão do universo inteiro demora ou falha | Universo pequeno no MVP; ingestão incremental e idempotente |
-| Paper trading em tempo real leva semanas (ADR-0008 pede ≥ 20 pregões) | Ciclo longo para o critério de saída | Decisão 3: separar validação do fluxo (replay) de validação da estratégia (tempo real) |
+| Paper trading em tempo real leva semanas (ADR-0008 pede ≥ 20 pregões) | Ciclo longo para o critério de saída | Decisão 3: replay valida o fluxo dentro das 8 semanas; o tempo real roda depois, sem bloquear o restante |
 | `backtesting-engine` próprio (ADR-0005) é o maior bloco ainda não iniciado | Concentra o risco de prazo do ciclo | Spec enxuta: uma estratégia, um timeframe (diário), custos simples e fixos |
 
-## Decisões em aberto
+## Decisões do ciclo
 
-Cada uma muda o escopo das specs seguintes. Proposta inicial entre colchetes.
+Aceitas em 2026-11-01. Cada uma delimita o escopo das specs seguintes;
+mudar uma delas é mudança de escopo e volta a este documento.
 
-1. **Estratégia de referência.** [Cruzamento de médias móveis em barras
-   diárias: simples de explicar e de verificar à mão, e exercita todo o
-   fluxo. O objetivo do ciclo é o processo, não a estratégia.]
-2. **Universo de ativos.** [3 a 5 ações líquidas da B3, declarado como
-   universo fixo, com a limitação de sobrevivência registrada no relatório.]
-3. **Paper trading: tempo real ou replay.** [Ambos, em etapas: replay
-   acelerado sobre histórico para validar o fluxo e o gate; depois paper em
-   tempo real pelos 20 pregões do ADR-0008.]
-4. **Fonte de dados real.** [Alpha Vantage, que já tem provider
-   implementado; avaliar outra fonte só se o risco de limites se confirmar.]
-5. **Duração do ciclo.** [Com o ritmo de 10 h/semana: cerca de 8 semanas
-   para REQ-01 a REQ-03 em replay, mais o período de paper em tempo real.]
+| # | Decisão | Escolha | Motivo |
+|---|---|---|---|
+| 1 | Estratégia de referência | Cruzamento de médias móveis em barras diárias | Simples de explicar e de verificar à mão, e exercita todo o fluxo. O objetivo do ciclo é o processo, não a estratégia |
+| 2 | Universo de ativos | PETR4, VALE3 e ITUB4 (até 5 ações líquidas da B3), universo fixo e declarado | Já usados no código e nos testes. A limitação de viés de sobrevivência é registrada no relatório de backtest, não omitida |
+| 3 | Paper trading | Em duas etapas: replay acelerado sobre o histórico (valida o fluxo e o gate); depois 20 pregões em tempo real (critério do ADR-0008) | Separa a validação do sistema, rápida, da validação da estratégia, que exige tempo de mercado |
+| 4 | Fonte de dados real | Alpha Vantage | Provider já implementado; outra fonte só se o risco de limites de uso se confirmar |
+| 5 | Duração | 8 semanas a 10 h/semana para REQ-01 a REQ-03 em replay (2026-11-02 a 2026-12-27), depois cerca de 1 mês de paper em tempo real | Ritmo de referência do guia de estudos |
+
+### Ordem de execução
+
+1. **REQ-02 — spec do `backtesting-engine`**, começando pela investigação
+   do viés de sobrevivência (maior risco do ciclo).
+2. **REQ-01 — ingestão real** do universo via Alpha Vantage (pré-requisito:
+   `ALPHA_VANTAGE_API_KEY` configurada; a suíte continua usando o provider mock).
+3. **REQ-03 — orquestração de paper trading** no `trading-api`: gate,
+   idempotência, `record_fill` e reconciliação, primeiro em replay.
+4. Paper trading em tempo real pelos 20 pregões.
 
 ## Rastreabilidade
 
