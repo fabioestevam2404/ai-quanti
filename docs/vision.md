@@ -91,8 +91,9 @@ exige o processo do ADR-0008 e um adapter de corretora real, fora deste ciclo.
 |---|---|---|
 | Viés de sobrevivência exige o histórico de ativos que saíram do índice; fontes gratuitas raramente têm | Item 2 do ADR-0010 fica "não verificado" e bloqueia a promoção a paper | **Investigado** ([0001](research/0001-vies-de-sobrevivencia-e-ajuste-de-precos.md)): inviável no ciclo 1 para o universo escolhido. Proposta: "limitação declarada" permite paper e bloqueia capital real ([ADR-0013](adr/0013-universo-declarado-no-checklist.md), proposto). Universo point-in-time (COTAHIST + carteiras do Ibovespa) vira candidato a Should do ciclo 2 |
 | Preços ingeridos sem ajuste por proventos (`TIME_SERIES_DAILY`) | Sinais falsos em desdobramentos e retorno errado no backtest | Ajuste por proventos vira requisito do REQ-01 e item 7 do checklist (ADR-0013) |
-| **Confirmado:** Alpha Vantage gratuita só entrega ~100 barras sem ajuste; histórico e série ajustada são premium | Decisão 4 não atende o REQ-01 | Rever a decisão 4 (investigação 0001, achado 5): COTAHIST + ajuste próprio ou plano pago |
-| Limites de uso da API de dados (Alpha Vantage) | Ingestão do universo inteiro demora ou falha | Universo pequeno no MVP; ingestão incremental e idempotente |
+| **Confirmado:** Alpha Vantage gratuita só entrega ~100 barras sem ajuste; histórico e série ajustada são premium | Decisão 4 original não atendia o REQ-01 | **Resolvido:** decisão 4 revista em 2026-11-02 para COTAHIST + ajuste próprio (investigação 0001, achado 5) |
+| Fonte de proventos (desdobramentos, grupamentos, dividendos) para ajustar o COTAHIST ainda não identificada | Sem ela, o item 7 do checklist (ADR-0013) fica "não verificado" e bloqueia paper | Investigação curta (0002) antes da spec do REQ-01: fontes oficiais da B3/CVM, formato e cobertura para o universo do MVP |
+| Acesso aos arquivos da B3 pode falhar por rede ou mudança de URL | Ingestão interrompida | Ingestão idempotente por arquivo anual; cache local dos ZIPs baixados; erro explícito com a URL tentada |
 | Paper trading em tempo real leva semanas (ADR-0008 pede ≥ 20 pregões) | Ciclo longo para o critério de saída | Decisão 3: replay valida o fluxo dentro das 8 semanas; o tempo real roda depois, sem bloquear o restante |
 | `backtesting-engine` próprio (ADR-0005) é o maior bloco ainda não iniciado | Concentra o risco de prazo do ciclo | Spec enxuta: uma estratégia, um timeframe (diário), custos simples e fixos |
 
@@ -106,15 +107,17 @@ mudar uma delas é mudança de escopo e volta a este documento.
 | 1 | Estratégia de referência | Cruzamento de médias móveis em barras diárias | Simples de explicar e de verificar à mão, e exercita todo o fluxo. O objetivo do ciclo é o processo, não a estratégia |
 | 2 | Universo de ativos | PETR4, VALE3 e ITUB4 (até 5 ações líquidas da B3), universo fixo e declarado | Já usados no código e nos testes. A limitação de viés de sobrevivência é registrada no relatório de backtest, não omitida |
 | 3 | Paper trading | Em duas etapas: replay acelerado sobre o histórico (valida o fluxo e o gate); depois 20 pregões em tempo real (critério do ADR-0008) | Separa a validação do sistema, rápida, da validação da estratégia, que exige tempo de mercado |
-| 4 | Fonte de dados real | Alpha Vantage | Provider já implementado; outra fonte só se o risco de limites de uso se confirmar |
+| 4 | Fonte de dados real | Séries históricas oficiais da B3 (COTAHIST) + ajuste próprio por proventos. *Revista em 2026-11-02; antes: Alpha Vantage* | Oficial, gratuita, sem chave nem limite de chamadas, desde 1986 e com ativos deslistados — a mesma base que o universo sem viés vai exigir no ciclo 2. A Alpha Vantage gratuita só entrega ~100 barras sem ajuste (investigação 0001, achado 5) |
 | 5 | Duração | 8 semanas a 10 h/semana para REQ-01 a REQ-03 em replay (2026-11-02 a 2026-12-27), depois cerca de 1 mês de paper em tempo real | Ritmo de referência do guia de estudos |
 
 ### Ordem de execução
 
 1. **REQ-02 — spec do `backtesting-engine`**, começando pela investigação
    do viés de sobrevivência (maior risco do ciclo).
-2. **REQ-01 — ingestão real** do universo via Alpha Vantage (pré-requisito:
-   `ALPHA_VANTAGE_API_KEY` configurada; a suíte continua usando o provider mock).
+2. **REQ-01 — ingestão real** do universo a partir do COTAHIST, com ajuste
+   por proventos, precedida da investigação 0002 (fonte de proventos). A
+   suíte continua usando o provider mock; o `AlphaVantageProvider` é
+   corrigido ou retirado na mesma spec.
 3. **REQ-03 — orquestração de paper trading** no `trading-api`: gate,
    idempotência, `record_fill` e reconciliação, primeiro em replay.
 4. Paper trading em tempo real pelos 20 pregões.
