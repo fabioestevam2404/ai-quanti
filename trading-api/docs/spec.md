@@ -110,3 +110,22 @@ Regras do contrato (valem para **qualquer** implementação, simulada ou real):
 3. Todo valor monetário/quantidade no port é `Decimal` — nunca `float`.
 4. `SimulatedBrokerAdapter` passa por todos os métodos do `BrokerAdapter`
    sem exigir nenhuma variável de ambiente ou credencial.
+
+## Rastreabilidade
+
+Cada critério de aceite e o teste que o comprova (caminhos relativos a
+`trading-api/tests/`). Critério novo entra nesta tabela no mesmo PR;
+critério sem teste automatizado precisa de justificativa aqui.
+
+| Critério | Evidência | Tipo |
+|---|---|---|
+| 1. `submit_order` idempotente por `client_order_id` | `test_simulated_broker_adapter.py::test_submeter_o_mesmo_client_order_id_duas_vezes_nao_duplica` | Unitário |
+| 2. Cancelar ordem preenchida não é erro | `test_simulated_broker_adapter.py::test_cancelar_ordem_ja_preenchida_e_idempotente_nao_lanca_erro` | Unitário |
+| 3. Valores monetários e quantidades em `Decimal` | `test_entities.py::test_quantity_float_e_rejeitada`; `::test_limit_price_float_e_rejeitado` | Unitário |
+| 4. Port completo sem variável de ambiente ou credencial | `test_simulated_broker_adapter.py::test_percorre_todo_o_port_sem_nenhuma_variavel_de_ambiente` | Unitário |
+
+Critério 3 valida a **entrada** do port (`OrderRequest`). As saídas
+(`OrderState`, `Fill`, `Position`, `AccountBalance`) são produzidas pelo
+adapter a partir de `Decimal`; um adapter real precisará converter a
+resposta da corretora para `Decimal` na própria fronteira — requisito da
+spec desse adapter.
