@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from decimal import Decimal
 
 import pytest
@@ -157,3 +158,27 @@ def test_get_order_state_de_id_nunca_submetido_e_none() -> None:
     adapter = _adapter()
 
     assert adapter.get_order_state("nunca-existiu") is None
+
+
+def test_percorre_todo_o_port_sem_nenhuma_variavel_de_ambiente(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Critério 4: paper trading sem credencial nem configuração (ADR-0008).
+    for name in list(os.environ):
+        monkeypatch.delenv(name)
+    adapter = _adapter()
+    request = OrderRequest(
+        client_order_id="order-1",
+        ticker="PETR4",
+        side=Side.BUY,
+        quantity=Decimal("100"),
+        order_type=OrderType.LIMIT,
+        limit_price=Decimal("25.00"),
+    )
+
+    submitted = adapter.submit_order(request)
+    assert adapter.get_order_state("order-1") == submitted
+    assert adapter.list_open_orders() == [submitted]
+    assert adapter.cancel_order("order-1").status == OrderStatus.CANCELLED
+    assert adapter.get_positions() == []
+    assert isinstance(adapter.get_account_balance().cash, Decimal)
