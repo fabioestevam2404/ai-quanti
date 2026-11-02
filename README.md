@@ -107,6 +107,12 @@ Cada push e pull request para `main` roda no [CI](.github/workflows/ci.yml):
 
 ## Roadmap
 
+**Ciclo atual:** um MVP de três capacidades: dados confiáveis → backtest
+validado → paper trading sob o gate de risco, para uma estratégia de
+referência. Escopo, prioridades (MoSCoW) e critério de saída em
+[docs/vision.md](docs/vision.md). As fases abaixo são o horizonte completo,
+não o compromisso deste ciclo.
+
 | Fase | Módulos | Objetivo |
 |---|---|---|
 | 0: Fundação ✅ | `docs/` (C4 + ADRs), CI | Arquitetura e decisões antes do código |
@@ -121,6 +127,7 @@ critério de aceite até o teste correspondente.
 
 ## Documentação
 
+- [Visão e MVP do ciclo atual](docs/vision.md)
 - Arquitetura (C4): [Contexto](docs/architecture/c4/c1-context.md) ·
   [Containers](docs/architecture/c4/c2-container.md) ·
   [Componentes](docs/architecture/c4/c3-components.md)
