@@ -70,13 +70,12 @@ layers =
 # for implementada.
 
 [importlinter:contract:backtesting-engine-layers]
-name = backtesting-engine: domain não conhece application (nem api, quando existir)
+name = backtesting-engine: domain não conhece application/api
 type = layers
 layers =
+    backtesting_engine.api
     backtesting_engine.application
     backtesting_engine.domain
-# backtesting_engine.api entra no contrato junto com run_backtest (fatia 3
-# da implementação, ver backtesting-engine/docs/spec.md).
 
 [importlinter:contract:backtesting-engine-so-usa-apis-publicas]
 name = backtesting-engine só importa feature_store.api, market_data_lake.api e risk_engine.api

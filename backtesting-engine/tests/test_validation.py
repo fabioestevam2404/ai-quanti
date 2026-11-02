@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from dataclasses import replace
 from datetime import date, timedelta
 
@@ -12,10 +11,10 @@ from backtesting_engine.application.validation import (
     run_validation,
 )
 from backtesting_engine.domain.entities import CostModel, MovingAverageParams, ValidationConfig
+from synthetic import START, wave_universe
 
-from market_data_lake.domain.entities import Instrument, OHLCVBar
+from market_data_lake.domain.entities import OHLCVBar
 
-START = date(2025, 1, 1)
 COSTS = CostModel(cost_bps=5, slippage_bps=5)
 CAPITAL = 100_000.0
 GRID = (
@@ -27,26 +26,8 @@ GRID = (
 CONFIG = ValidationConfig(oos_fraction=0.2, walk_forward_folds=3, param_grid=GRID)
 
 
-def _series(ticker: str, phase: float, length: int = 260) -> list[OHLCVBar]:
-    # Ondas com tendência leve: gera cruzamentos de média ao longo do período.
-    closes = [50 + 10 * math.sin(i / 9 + phase) + 0.03 * i for i in range(length)]
-    opens = [closes[0]] + [closes[i - 1] * (1 + 0.002 * math.sin(i)) for i in range(1, length)]
-    return [
-        OHLCVBar(
-            instrument=Instrument(ticker=ticker),
-            bar_date=START + timedelta(days=i),
-            open=opens[i],
-            high=max(opens[i], closes[i]),
-            low=min(opens[i], closes[i]),
-            close=closes[i],
-            volume=1_000.0,
-        )
-        for i in range(length)
-    ]
-
-
 def _universe() -> dict[str, list[OHLCVBar]]:
-    return {"PETR4": _series("PETR4", 0.0), "VALE3": _series("VALE3", 1.3)}
+    return wave_universe()
 
 
 def _scramble_after(bars: list[OHLCVBar], cutoff: date) -> list[OHLCVBar]:
