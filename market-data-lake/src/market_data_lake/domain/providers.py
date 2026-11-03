@@ -11,7 +11,7 @@ class MarketDataProvider(Protocol):
 
     Vive em `domain` (não em `infrastructure`) porque é a interface que
     `application` depende — os adapters concretos (`MockMarketDataProvider`,
-    `AlphaVantageProvider`) ficam em `infrastructure` e implementam esta
+    `CotahistProvider`) ficam em `infrastructure` e implementam esta
     porta, seguindo a inversão de dependência da Clean Architecture.
     """
 

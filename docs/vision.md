@@ -47,8 +47,8 @@ seja ele qual for, é confiável — e que nenhuma ordem passa sem o gate.
 
 | ID | Capacidade | Prioridade | Situação |
 |---|---|---|---|
-| REQ-01 | Dados históricos confiáveis para o universo do MVP: ingestão real, persistida, auditada, reprocessável | **Must** | 🟡 Base pronta (`market-data-lake`, `feature-store`); falta ingestão real do universo escolhido |
-| REQ-02 | Backtest de uma estratégia de referência com relatório que preenche os itens do checklist (ADR-0010, alterado pelo ADR-0013: custos, walk-forward, out-of-sample, robustez, preços ajustados…) | **Must** | ✅ Implementado ([spec](../backtesting-engine/docs/spec.md)); item 7 aguarda o REQ-01 |
+| REQ-01 | Dados históricos confiáveis para o universo do MVP: ingestão real, persistida, auditada, reprocessável | **Must** | ✅ Implementado ([spec v2](../market-data-lake/docs/spec.md#v2--req-01-cotahist-e-ajuste-por-proventos)): COTAHIST, ajuste por proventos e reconciliação; falta só ingerir o período real do universo |
+| REQ-02 | Backtest de uma estratégia de referência com relatório que preenche os itens do checklist (ADR-0010, alterado pelo ADR-0013: custos, walk-forward, out-of-sample, robustez, preços ajustados…) | **Must** | ✅ Implementado ([spec](../backtesting-engine/docs/spec.md)); item 7 lê a declaração de ajuste do REQ-01 |
 | REQ-03 | Paper trading da mesma estratégia: toda ordem consulta o gate antes de sair; fills alimentam o ledger; idempotência e reconciliação (ADR-0007) | **Must** | 🟡 Gate e port de corretora prontos; falta a orquestração no `trading-api` |
 
 ### Demais itens
@@ -92,7 +92,7 @@ exige o processo do ADR-0008 e um adapter de corretora real, fora deste ciclo.
 | Viés de sobrevivência exige o histórico de ativos que saíram do índice; fontes gratuitas raramente têm | Item 2 do ADR-0010 fica "não verificado" e bloqueia a promoção a paper | **Investigado** ([0001](research/0001-vies-de-sobrevivencia-e-ajuste-de-precos.md)): inviável no ciclo 1 para o universo escolhido. Proposta: "limitação declarada" permite paper e bloqueia capital real ([ADR-0013](adr/0013-universo-declarado-no-checklist.md), aceito). Universo point-in-time (COTAHIST + carteiras do Ibovespa) vira candidato a Should do ciclo 2 |
 | Preços ingeridos sem ajuste por proventos (`TIME_SERIES_DAILY`) | Sinais falsos em desdobramentos e retorno errado no backtest | Ajuste por proventos vira requisito do REQ-01 e item 7 do checklist (ADR-0013) |
 | **Confirmado:** Alpha Vantage gratuita só entrega ~100 barras sem ajuste; histórico e série ajustada são premium | Decisão 4 original não atendia o REQ-01 | **Resolvido:** decisão 4 revista em 2026-11-02 para COTAHIST + ajuste próprio (investigação 0001, achado 5) |
-| Fonte de proventos (desdobramentos, grupamentos, dividendos) para ajustar o COTAHIST | Sem ela, o item 7 do checklist (ADR-0013) fica "não verificado" e bloqueia paper | **Investigado** ([0002](research/0002-fonte-de-proventos.md)): rotas da B3 têm o detalhe necessário, mas omitem eventos (desdobramento de 2005 da PETR4). Proposta: snapshot da B3 + reconciliação obrigatória contra o COTAHIST + tabela de correções curada |
+| Fonte de proventos (desdobramentos, grupamentos, dividendos) para ajustar o COTAHIST | Sem ela, o item 7 do checklist (ADR-0013) fica "não verificado" e bloqueia paper | **Resolvido (2026-11-03):** snapshot da B3 + tabela de correções + reconciliação obrigatória contra o COTAHIST ([0002](research/0002-fonte-de-proventos.md)); zero pendências em PETR4 2000–2008, VALE3 2007 e ITUB4 2021 |
 | Cisão da ITUB4 em out/2021 (XP) não se ajusta com fator simples | ITUB4 pode impedir o item 7 de todo o universo | **Resolvido (2026-11-02):** fator da B3 (−17,54%) na tabela de correções, conferido contra o COTAHIST |
 | Acesso aos arquivos da B3 pode falhar por rede ou mudança de URL | Ingestão interrompida | Ingestão idempotente por arquivo anual; cache local dos ZIPs baixados; erro explícito com a URL tentada |
 | Paper trading em tempo real leva semanas (ADR-0008 pede ≥ 20 pregões) | Ciclo longo para o critério de saída | Decisão 3: replay valida o fluxo dentro das 8 semanas; o tempo real roda depois, sem bloquear o restante |
@@ -116,10 +116,13 @@ mudar uma delas é mudança de escopo e volta a este documento.
 1. ✅ **REQ-02 — `backtesting-engine`**: investigação do viés de
    sobrevivência, spec e implementação em três fatias (concluído em
    2026-11-02).
-2. **REQ-01 — ingestão real** do universo a partir do COTAHIST, com ajuste
-   por proventos, precedida da investigação 0002 (fonte de proventos). A
-   suíte continua usando o provider mock; o `AlphaVantageProvider` é
-   corrigido ou retirado na mesma spec.
+2. ✅ **REQ-01 — dados reais ajustados**: investigação 0002, spec v2 do
+   `market-data-lake` e implementação em três fatias (concluído em
+   2026-11-03; Alpha Vantage retirada).
+   ✅ **Primeiro backtest real** ([relatório 0003](research/0003-primeiro-backtest-real.md)):
+   PETR4, VALE3 e ITUB4 de 2010 a 2025, **apto para paper** (item 2 com
+   limitação declarada). A reconciliação achou o grupamento incompleto do Itaú
+   em 2011, que sozinho dobrava o drawdown do resultado.
 3. **REQ-03 — orquestração de paper trading** no `trading-api`: gate,
    idempotência, `record_fill` e reconciliação, primeiro em replay.
 4. Paper trading em tempo real pelos 20 pregões.

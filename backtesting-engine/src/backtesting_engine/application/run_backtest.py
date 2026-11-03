@@ -13,20 +13,41 @@ from backtesting_engine.domain.entities import (
     TradeStats,
 )
 from backtesting_engine.domain.money import to_money
-from market_data_lake.api import OHLCVBar, get_price_series
+from market_data_lake.api import (
+    AdjustmentDeclaration,
+    OHLCVBar,
+    get_adjustment_declaration,
+    get_price_series,
+)
 
-PriceLoader = Callable[[str, date, date], list[OHLCVBar]]
+PriceLoader = Callable[..., list[OHLCVBar]]  # (ticker, start, end, adjusted=...)
+DeclarationLoader = Callable[[str, date, date], AdjustmentDeclaration]
 
 
 class RunBacktestUseCase:
-    """Carrega preços, valida a estratégia e monta o relatório com checklist."""
+    """Carrega preços, valida a estratégia e monta o relatório com checklist.
 
-    def __init__(self, price_loader: PriceLoader = get_price_series) -> None:
+    Cada série é lida ajustada quando o market-data-lake a declara ajustada;
+    senão, bruta — e o item 7 do checklist registra o motivo.
+    """
+
+    def __init__(
+        self,
+        price_loader: PriceLoader = get_price_series,
+        declaration_loader: DeclarationLoader = get_adjustment_declaration,
+    ) -> None:
         self._load_prices = price_loader
+        self._declare = declaration_loader
 
     def execute(self, config: BacktestConfig) -> BacktestReport:
+        declarations = {
+            ticker: self._declare(ticker, config.start, config.end)
+            for ticker in config.universe.tickers
+        }
         bars_by_ticker = {
-            ticker: self._load_prices(ticker, config.start, config.end)
+            ticker: self._load_prices(
+                ticker, config.start, config.end, adjusted=declarations[ticker].adjusted
+            )
             for ticker in config.universe.tickers
         }
         missing = [ticker for ticker, bars in bars_by_ticker.items() if not bars]
@@ -43,10 +64,11 @@ class RunBacktestUseCase:
         return BacktestReport(
             config=config,
             validation=validation,
-            checklist=build_checklist(config, bars_by_ticker, validation),
+            checklist=build_checklist(config, bars_by_ticker, validation, declarations),
             in_sample_money=_money(validation.in_sample_result),
             out_of_sample_money=_money(oos) if oos is not None else None,
             in_sample_trades=_trade_stats(validation.in_sample_result),
+            price_declarations=tuple(declarations[t] for t in config.universe.tickers),
         )
 
 

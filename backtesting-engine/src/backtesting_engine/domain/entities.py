@@ -5,6 +5,10 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from enum import StrEnum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # o domínio só referencia o tipo da API pública
+    from market_data_lake.api import AdjustmentDeclaration
 
 BPS = 10_000
 CHECKLIST_SIZE = 7
@@ -273,6 +277,9 @@ class BacktestReport:
     in_sample_money: MonetarySummary
     out_of_sample_money: MonetarySummary | None
     in_sample_trades: TradeStats
+    # Uma por ativo, do market-data-lake: de onde vieram os preços e se foram
+    # ajustados e reconciliados (base do item 7). Só tipo; sem import em runtime.
+    price_declarations: tuple[AdjustmentDeclaration, ...] = ()
 
     @property
     def apto_para_paper(self) -> bool:

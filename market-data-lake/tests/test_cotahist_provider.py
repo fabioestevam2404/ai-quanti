@@ -101,6 +101,19 @@ def test_resposta_de_sucesso_que_nao_e_zip_nao_entra_no_cache(tmp_path: Path) ->
     assert list(tmp_path.iterdir()) == []
 
 
+def test_arquivo_antigo_sem_extensao_txt_e_lido(tmp_path: Path) -> None:
+    # O ZIP real de 2000 traz "COTAHIST.A2000" (nome antigo do layout); a partir
+    # de 2005 a B3 usa "COTAHIST_A2005.TXT".
+    with zipfile.ZipFile(tmp_path / "COTAHIST_A2000.ZIP", "w") as archive:
+        archive.write(FIXTURES / "COTAHIST_A2000.TXT", "COTAHIST.A2000")
+
+    bars = _provider(tmp_path, _FakeDownloader()).fetch_daily_bars(
+        "PETR4", date(2000, 6, 1), date(2000, 6, 30)
+    )
+
+    assert [b.bar_date for b in bars] == [date(2000, 6, 21), date(2000, 6, 23)]
+
+
 def test_filtra_pelo_periodo_pedido(tmp_path: Path) -> None:
     bars = _provider(tmp_path, _FakeDownloader()).fetch_daily_bars(
         "PETR4", date(2008, 4, 28), date(2008, 4, 28)
