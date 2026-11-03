@@ -221,3 +221,29 @@ def get_adjustment_declaration(ticker, start, end) -> AdjustmentDeclaration: ...
     barras de antes; a suíte v1 continua verde.
 15. **Sem rede nos testes:** toda a suíte roda com snapshots e amostras
     versionados; nenhum teste depende da B3 estar no ar.
+
+### Rastreabilidade (v2)
+
+Caminhos relativos a `market-data-lake/tests/`. A amostra
+`fixtures/cotahist/` tem linhas reais dos arquivos de 2000 e 2008, sem
+alteração; variações sintéticas são montadas nos próprios testes.
+
+| Critério | Evidência | Tipo |
+|---|---|---|
+| 5. Leitura do COTAHIST | `test_cotahist_parser.py::test_le_precos_do_desdobramento_de_2008`; `::test_fatcot_1000_vira_preco_por_acao`; `::test_ignora_cabecalho_e_rodape`; `::test_mercado_fracionario_tem_codigo_e_mercado_proprios`; `::test_filtro_vem_antes_do_calculo_de_preco`; `::test_fatcot_zero_na_linha_pedida_e_erro_explicito`; `test_cotahist_provider.py::test_so_mercado_a_vista_do_ticker_pedido`; `::test_mesmo_codigo_em_outro_mercado_fica_fora` | Unitário |
+| 6. Cache e retentativa | `test_cotahist_provider.py::test_ano_ja_baixado_nao_e_baixado_de_novo`; `::test_falha_no_meio_do_download_nao_deixa_arquivo_parcial`; `::test_todas_as_tentativas_falham_e_erro_cita_a_url`; `::test_resposta_de_sucesso_que_nao_e_zip_nao_entra_no_cache`; `::test_cache_corrompido_e_baixado_de_novo`; `::test_ano_corrente_vale_so_por_um_dia` | Unitário |
+| 7 a 13 | Pendentes: fatias 2 (eventos e ajuste) e 3 (reconciliação, declaração, item 7) | — |
+| 14. Compatibilidade | Suíte v1 inalterada e verde; `test_cotahist_ingestion.py::test_ingere_do_cotahist_e_le_pela_api` | Integração |
+| 15. Sem rede nos testes | Estrutural nesta fatia: downloads substituídos por funções que copiam a amostra; cache pré-preenchido na integração | Estrutural |
+
+Fixado na implementação (fatia 1): o arquivo do **ano em curso** vale por um
+dia no cache (cresce a cada pregão); anos anteriores são baixados uma vez. O
+filtro por código e mercado vem **antes** da conversão de preços: o COTAHIST
+real de 2007 tem 4 opções com `FATCOT = 0`, que derrubariam a leitura — achado
+na verificação manual com download real, não pela amostra.
+
+Testes validados com defeitos simulados: ignorar `FATCOT`, não apagar arquivo
+parcial, ano corrente sem expirar e sem retentativa quebram os testes. "Sem
+filtro de mercado à vista" e "ZIP baixado sem validação" sobreviveram à
+primeira versão dos testes e motivaram `test_mesmo_codigo_em_outro_mercado_fica_fora`
+e `test_resposta_de_sucesso_que_nao_e_zip_nao_entra_no_cache`.

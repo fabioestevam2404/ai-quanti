@@ -22,11 +22,13 @@ from market_data_lake.infrastructure.persistence.postgres_ingestion_log_reposito
 from market_data_lake.infrastructure.providers.alpha_vantage_provider import (
     AlphaVantageProvider,
 )
+from market_data_lake.infrastructure.providers.cotahist_provider import CotahistProvider
 from market_data_lake.infrastructure.providers.mock_provider import MockMarketDataProvider
 
 _PROVIDERS: dict[str, type[MarketDataProvider]] = {
     "mock": MockMarketDataProvider,
     "alpha_vantage": AlphaVantageProvider,
+    "cotahist": CotahistProvider,  # séries oficiais da B3, preços brutos (spec v2)
 }
 
 

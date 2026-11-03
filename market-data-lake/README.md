@@ -1,6 +1,6 @@
 # market-data-lake
 
-> Status: 🟡 Em implementação (v1 local/dev) — OHLCV diário, provider mock + Alpha Vantage
+> Status: 🟡 Em implementação — v1 local/dev (OHLCV diário, provider mock); v2 (REQ-01): fatia 1 entregue, leitura das séries oficiais da B3 (COTAHIST), preços ainda **brutos**
 
 Ingestão, versionamento e armazenamento histórico de dados de mercado (preços, volume, order book). Fonte de verdade batch da plataforma.
 
@@ -20,7 +20,15 @@ from market_data_lake.api import ingest_daily_bars, get_price_series
 
 ingest_daily_bars("PETR4", date(2026, 8, 1), date(2026, 8, 14), source="mock")  # sem default de propósito
 get_price_series("PETR4", date(2026, 8, 1), date(2026, 8, 14))
+
+# Séries oficiais da B3: baixa um arquivo anual por ano pedido (cache em
+# MARKET_DATA_LAKE_COTAHIST_DIR). Preços brutos: o ajuste por proventos vem
+# nas próximas fatias do REQ-01.
+ingest_daily_bars("PETR4", date(2015, 1, 1), date(2025, 12, 31), source="cotahist")
 ```
+
+O download usa os certificados do sistema operacional (`truststore`): funciona
+em rede com inspeção TLS sem desligar a verificação.
 
 ## Spec
 
