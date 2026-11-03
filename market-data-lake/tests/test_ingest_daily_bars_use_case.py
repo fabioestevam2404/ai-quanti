@@ -82,9 +82,8 @@ def test_ingestao_com_falha_registra_auditoria_e_propaga_erro(
 def test_api_ingere_com_mock_sem_chave_de_api(
     duckdb_path: Path, postgres_dsn: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # Critério 1: dev sem chave de API. DuckDB e Postgres apontam para o
-    # ambiente de teste (fixtures), não para dev.
-    monkeypatch.delenv("ALPHA_VANTAGE_API_KEY", raising=False)
+    # Critério 1: dev sem chave de API nem rede. DuckDB e Postgres apontam para
+    # o ambiente de teste (fixtures), não para dev.
     monkeypatch.setenv("MARKET_DATA_LAKE_DUCKDB_PATH", str(duckdb_path))
 
     run = ingest_daily_bars("PETR4", date(2026, 8, 3), date(2026, 8, 7), source="mock")

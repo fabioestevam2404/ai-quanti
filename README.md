@@ -35,7 +35,7 @@ flowchart LR
     quant(["Quant researcher"])
 
     subgraph ext["Sistemas externos"]
-        av["Alpha Vantage<br/>dados de mercado"]
+        av["B3<br/>COTAHIST e eventos de proventos"]
         broker["Corretora real<br/>fora do ciclo 1"]
     end
 
@@ -54,7 +54,7 @@ flowchart LR
         redis[("Redis<br/>features hot-path")]
     end
 
-    av -->|ingestão batch| mdl
+    av -->|"séries anuais e eventos (snapshot)"| mdl
     mdl --> duck
     mdl -->|auditoria| pg
     fs -->|market_data_lake.api| mdl
@@ -94,7 +94,7 @@ A arquitetura-alvo completa (14 módulos) está nos diagramas
 
 | Módulo | Status | O que já existe |
 |---|---|---|
-| [`market-data-lake`](market-data-lake/) | 🟡 v1 local | OHLCV diário (provider mock + Alpha Vantage), DuckDB, auditoria de ingestão em Postgres |
+| [`market-data-lake`](market-data-lake/) | 🟡 v2 local | Séries oficiais da B3 (COTAHIST) e provider mock; ajuste por proventos com eventos da B3 e tabela de correções; reconciliação contra o COTAHIST e declaração de ajuste por série; DuckDB e auditoria em Postgres |
 | [`feature-store`](feature-store/) | 🟡 v1 local | Retorno diário, SMA e volatilidade; leitura online em Redis |
 | [`risk-engine`](risk-engine/) | 🟡 v1 local | Sharpe, Sortino, Calmar, VaR, drawdown + gate pré-trade fail-closed com circuit breaker |
 | [`backtesting-engine`](backtesting-engine/) | 🟡 v1 local | Cruzamento de médias com execução em `t+1`, custos e slippage; out-of-sample, walk-forward e robustez; relatório com checklist de 7 itens e elegibilidade para paper/capital real (ADR-0010/0013) |

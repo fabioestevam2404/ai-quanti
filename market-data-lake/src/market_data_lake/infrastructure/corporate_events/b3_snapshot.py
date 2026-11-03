@@ -60,8 +60,11 @@ def _capital_event(raw: dict[str, Any], source: str) -> CorporateEvent:
 
 def _cash_event(raw: dict[str, Any], source: str) -> CorporateEvent:
     pct = _number(raw.get("corporateActionPrice"))
-    value = _number(raw.get("valueCash"))
-    close = _number(raw.get("closingPricePriorExDate"))
+    # Antes do grupamento de 2000 a B3 cotava por lote de mil: valor e
+    # fechamento vêm por lote (quotedPerShares = 1000). O percentual não muda.
+    per_lot = _number(raw.get("quotedPerShares")) or 1.0
+    value = _per_share(_number(raw.get("valueCash")), per_lot)
+    close = _per_share(_number(raw.get("closingPricePriorExDate")), per_lot)
     price_factor, derived = _cash_factor(pct, value, close)
     return CorporateEvent(
         kind=EventKind.CASH,
@@ -88,6 +91,10 @@ def _cash_factor(
     if value is not None and close is not None and close > 0 and 0 <= value < close:
         return 1 - value / close, True
     return None, False
+
+
+def _per_share(value: float | None, per_lot: float) -> float | None:
+    return value / per_lot if value is not None else None
 
 
 def _from_new_shares_pct(factor: float | None) -> float | None:

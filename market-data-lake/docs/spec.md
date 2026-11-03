@@ -1,6 +1,6 @@
 # Spec — market-data-lake
 
-**Status:** v1 implementada; [v2 (REQ-01: COTAHIST e ajuste por proventos)](#v2--req-01-cotahist-e-ajuste-por-proventos) aprovada em 2026-11-02 — pronta para implementação
+**Status:** v1 implementada; [v2 (REQ-01: COTAHIST e ajuste por proventos)](#v2--req-01-cotahist-e-ajuste-por-proventos) implementada (fatias 1 a 3) — aprovada em 2026-11-02
 **Fase:** 1 — Dados
 **Depende de:** nenhum módulo interno (fonte de verdade histórica)
 **ADRs relevantes:** [ADR-0001](../../docs/adr/0001-modular-monolith-vs-microservices.md) (fronteiras de módulo), [ADR-0003](../../docs/adr/0003-database-strategy.md) (DuckDB local / ClickHouse produção), [ADR-0002](../../docs/adr/0002-language-per-module.md) (Python)
@@ -234,11 +234,11 @@ alteração; variações sintéticas são montadas nos próprios testes.
 | 6. Cache e retentativa | `test_cotahist_provider.py::test_ano_ja_baixado_nao_e_baixado_de_novo`; `::test_falha_no_meio_do_download_nao_deixa_arquivo_parcial`; `::test_todas_as_tentativas_falham_e_erro_cita_a_url`; `::test_resposta_de_sucesso_que_nao_e_zip_nao_entra_no_cache`; `::test_cache_corrompido_e_baixado_de_novo`; `::test_ano_corrente_vale_so_por_um_dia` | Unitário |
 | 7. Snapshot | `test_adjusted_series.py::test_api_ajusta_a_partir_do_snapshot_sem_rede`; `test_corporate_events_sources.py::test_store_guarda_e_le_o_snapshot_mais_recente` | Integração |
 | 8. Sentido do fator | `test_adjusted_series.py::test_desdobramento_de_2008_e_grupamento_de_2000_sem_salto`; `test_corporate_events_sources.py::test_desdobramento_e_grupamento_da_petr4_com_o_fator_de_preco_certo`; `test_adjustment.py::test_desdobramento_divide_os_precos_anteriores`; `::test_grupamento_multiplica_os_precos_anteriores` | Integração + unitário |
-| 9. Correção prevalece | `test_adjusted_series.py::test_desdobramento_de_2005_so_existe_na_tabela_de_correcoes`; `test_adjustment.py::test_correcao_prevalece_sobre_evento_de_capital_da_b3_na_mesma_data_ex`; `test_corporate_events_sources.py::test_tabela_de_correcoes_versionada` | Integração + unitário |
-| 10. Cisão | `test_adjusted_series.py::test_cisao_da_itub4_ajustada_pela_correcao`; `test_adjustment.py::test_evento_sem_fator_e_sem_correcao_fica_como_nao_suportado` | Integração + unitário |
-| 11. Proventos em dinheiro | `test_adjustment.py::test_provento_em_dinheiro_aplica_o_fator_da_b3`; `test_corporate_events_sources.py::test_proventos_em_dinheiro_usam_o_percentual_da_b3`; `::test_percentual_ausente_e_derivado_pela_formula_da_b3`. A pendência por incoerência entre percentual e valor fica para a fatia 3 | Unitário |
+| 9. Correção prevalece | `test_adjusted_series.py::test_desdobramento_de_2005_so_existe_na_tabela_de_correcoes`; `test_adjustment.py::test_correcao_prevalece_sobre_evento_de_capital_da_b3_na_mesma_data_ex`; `test_corporate_events_sources.py::test_tabela_de_correcoes_versionada`; sem a linha, pendência: `test_reconciliation.py::test_sem_a_correcao_de_2005_a_reconciliacao_acusa_o_salto` | Integração + unitário |
+| 10. Cisão | `test_adjusted_series.py::test_cisao_da_itub4_ajustada_pela_correcao`; `test_adjustment.py::test_evento_sem_fator_e_sem_correcao_fica_como_nao_suportado`; `test_reconciliation.py::test_cisao_sem_correcao_vira_pendencia_e_com_correcao_nao`; `::test_tolerancia_absorve_o_movimento_do_dia` | Integração + unitário |
+| 11. Proventos em dinheiro | `test_adjustment.py::test_provento_em_dinheiro_aplica_o_fator_da_b3`; `test_corporate_events_sources.py::test_proventos_em_dinheiro_usam_o_percentual_da_b3`; `::test_percentual_ausente_e_derivado_pela_formula_da_b3`; `::test_valor_e_fechamento_por_lote_viram_por_acao`; `test_reconciliation.py::test_provento_com_percentual_incoerente_com_o_valor_gera_pendencia`; `::test_fechamento_da_data_com_diferente_do_cotahist_gera_pendencia` | Unitário |
 | 12. Último preço intacto | `test_adjusted_series.py::test_ultimo_preco_igual_ao_bruto`; `test_adjustment.py::test_ultimo_preco_da_serie_nunca_muda` | Integração + unitário |
-| 13 | Pendente: fatia 3 (declaração e item 7) | — |
+| 13. Item 7 honesto | `test_adjustment_declaration.py::test_serie_real_com_eventos_e_declarada_verificada`; `::test_serie_do_mock_nao_e_declarada_ajustada`; `::test_sem_snapshot_a_serie_nao_e_declarada_ajustada`; `::test_pendencia_impede_a_declaracao_verificada`. Lado do consumidor: testes do item 7 na rastreabilidade da [spec do `backtesting-engine`](../../backtesting-engine/docs/spec.md#rastreabilidade) (critério 9) | Integração + unitário |
 | 14. Compatibilidade | Suíte v1 inalterada e verde; `test_cotahist_ingestion.py::test_ingere_do_cotahist_e_le_pela_api` | Integração |
 | 15. Sem rede nos testes | Estrutural nesta fatia: downloads substituídos por funções que copiam a amostra; cache pré-preenchido na integração | Estrutural |
 
@@ -267,6 +267,26 @@ Fixado na implementação (fatia 2):
   (R$ 0,0000000001).
 - `refresh_corporate_events` devolve a data da coleta.
 
+Fixado na implementação (fatia 3):
+
+- **Reconciliação** (`domain/reconciliation`) com as tolerâncias da seção 5;
+  o salto sem evento é medido na série **ajustada** (pega tanto salto bruto sem
+  evento quanto fator aplicado errado); datas com evento de capital são
+  conferidas contra o fator, não contra a faixa.
+- **`quotedPerShares`:** antes de 2000 a B3 cotava por lote de mil; valor e
+  fechamento dos proventos são divididos por esse campo (o percentual não
+  muda). Sem isso, quatro pendências falsas em 23/03/2000 na PETR4.
+- **Nome do membro do ZIP:** `COTAHIST.A2000` (layout antigo) e
+  `COTAHIST_A2005.TXT` em diante; o leitor aceita os dois.
+- **Declaração** (`get_adjustment_declaration`): série sem ISIN (mock), sem
+  barras ou sem snapshot é declarada **não ajustada**, com o motivo; o
+  `backtesting-engine` lê a série bruta nesses casos e o item 7 mostra o motivo.
+- **Alpha Vantage retirada** (provider, fonte `alpha_vantage` e variável).
+
+Reconciliação com anos inteiros de dados reais (fora da suíte): PETR4 de 2000
+a 2008 (2.231 pregões, 51 eventos), VALE3 em 2007 (245 pregões, 6 eventos) e
+ITUB4 em 2021 (247 pregões, 20 eventos) — **zero pendências**.
+
 Verificação com anos inteiros de dados reais (fora da suíte): PETR4 de 2005 a
 2008 tem exatamente dois saltos de abertura fora de [0,75; 1,33] na série
 bruta (01/09/2005 e 28/04/2008) e nenhum na ajustada; ITUB4 em 2021, nenhum
@@ -280,4 +300,8 @@ e `test_resposta_de_sucesso_que_nao_e_zip_nao_entra_no_cache`. Na fatia 2, os
 8 defeitos simulados quebram os testes na primeira versão: fator de
 desdobramento sem `/100`, grupamento sem inverter, percentual sem `/100`,
 correção sem prevalecer, linhas repetidas contando duas vezes, data ex um dia
-antes, fator aplicado no próprio dia ex e ISIN ignorado.
+antes, fator aplicado no próprio dia ex e ISIN ignorado. Na fatia 3, os 8
+defeitos simulados quebram os testes: conferência do evento de capital,
+salto sem evento, coerência do provento e fechamento da data-com desligados,
+evento sem fator sem pendência, declaração verificada com pendência, item 7
+ignorando pendências e backtest sem pedir a série ajustada.

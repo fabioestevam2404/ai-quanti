@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from backtesting_engine.application.signals import moving_average_cross_signals
 from backtesting_engine.domain.entities import (
     BacktestConfig,
@@ -8,7 +10,7 @@ from backtesting_engine.domain.entities import (
     MovingAverageParams,
     ValidationResult,
 )
-from market_data_lake.api import OHLCVBar
+from market_data_lake.api import AdjustmentDeclaration, OHLCVBar
 
 LOOKAHEAD_CUTS = 5
 
@@ -22,6 +24,7 @@ def build_checklist(
     config: BacktestConfig,
     bars_by_ticker: dict[str, list[OHLCVBar]],
     validation: ValidationResult,
+    declarations: Mapping[str, AdjustmentDeclaration] | None = None,
 ) -> tuple[ChecklistItem, ...]:
     """Os 7 itens do ADR-0010/0013, cada um com estado e evidência.
 
@@ -35,7 +38,7 @@ def build_checklist(
         _walk_forward(config, validation),
         _out_of_sample(bars_by_ticker, validation),
         _robustness(validation),
-        _adjusted_prices(),
+        _adjusted_prices(config, declarations or {}),
     )
 
 
@@ -176,12 +179,33 @@ def _robustness(validation: ValidationResult) -> ChecklistItem:
     return ChecklistItem(6, name, F, f"{detail}: há vizinho abaixo do mínimo")
 
 
-def _adjusted_prices() -> ChecklistItem:
-    # O market-data-lake ainda não declara se a série é ajustada por
-    # proventos (REQ-01). Até lá, o motor não pode afirmar o item.
+def _adjusted_prices(
+    config: BacktestConfig, declarations: Mapping[str, AdjustmentDeclaration]
+) -> ChecklistItem:
+    # Só o market-data-lake pode afirmar o ajuste: o item segue a declaração
+    # de cada série, e uma pendência em qualquer ativo basta para não verificar.
+    name = "Preços ajustados por proventos"
+    problems: list[str] = []
+    for ticker in config.universe.tickers:
+        declaration = declarations.get(ticker)
+        if declaration is None:
+            problems.append(f"{ticker}: sem declaração de ajuste do market-data-lake")
+        elif not declaration.adjusted:
+            problems.append(f"{ticker}: não ajustada ({declaration.reason})")
+        elif declaration.pendencies:
+            shown = "; ".join(
+                f"{p.bar_date} {p.kind.value}: {p.detail}" for p in declaration.pendencies[:3]
+            )
+            problems.append(f"{ticker}: {len(declaration.pendencies)} pendência(s) — {shown}")
+    if problems:
+        return ChecklistItem(7, name, N, " | ".join(problems))
+
+    applied = sum(count for d in declarations.values() for _, count in d.events_applied)
+    sources = sorted({s for d in declarations.values() for s in d.sources})
     return ChecklistItem(
         7,
-        "Preços ajustados por proventos",
-        N,
-        "o market-data-lake não declara ajuste por proventos da série (pendente no REQ-01)",
+        name,
+        V,
+        f"{', '.join(config.universe.tickers)}: séries ajustadas e reconciliadas contra o "
+        f"COTAHIST sem pendências; {applied} eventos aplicados; fontes: {', '.join(sources)}",
     )

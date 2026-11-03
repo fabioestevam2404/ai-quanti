@@ -1,6 +1,6 @@
 # market-data-lake
 
-> Status: 🟡 Em implementação — v1 local/dev (OHLCV diário, provider mock); v2 (REQ-01): fatias 1 e 2 entregues, séries oficiais da B3 (COTAHIST) e ajuste por proventos; reconciliação e declaração na fatia 3
+> Status: 🟡 v2 local (REQ-01 implementado) — séries oficiais da B3 (COTAHIST), ajuste por proventos, reconciliação contra o COTAHIST e declaração de ajuste por série
 
 Ingestão, versionamento e armazenamento histórico de dados de mercado (preços, volume, order book). Fonte de verdade batch da plataforma.
 
@@ -16,7 +16,9 @@ uv run --all-packages alembic upgrade head
 
 ```python
 from datetime import date
-from market_data_lake.api import get_price_series, ingest_daily_bars, refresh_corporate_events
+from market_data_lake.api import (
+    get_adjustment_declaration, get_price_series, ingest_daily_bars, refresh_corporate_events,
+)
 
 ingest_daily_bars("PETR4", date(2026, 8, 1), date(2026, 8, 14), source="mock")  # sem default de propósito
 get_price_series("PETR4", date(2026, 8, 1), date(2026, 8, 14))
@@ -31,7 +33,16 @@ refresh_corporate_events("PETR4")
 # Série ajustada por proventos: snapshot mais recente + tabela de correções
 # (reference/corporate_events_corrections.csv). Sem snapshot, LookupError.
 get_price_series("PETR4", date(2015, 1, 1), date(2025, 12, 31), adjusted=True)
+
+# O que se pode afirmar sobre o ajuste: reconciliação contra o COTAHIST.
+declaration = get_adjustment_declaration("PETR4", date(2015, 1, 1), date(2025, 12, 31))
+declaration.verified      # True só com série ajustada e zero pendências
+declaration.pendencies    # saltos sem evento, eventos que não explicam o salto...
 ```
+
+O `backtesting-engine` lê a declaração de cada ativo: usa a série ajustada
+quando ela existe e só marca o item 7 do checklist como verificado quando
+todas as séries estão verificadas.
 
 A tabela de correções guarda eventos que faltam ou estão errados nas rotas da
 B3, sempre com a fonte — hoje, o desdobramento de 2005 da PETR4 e a cisão de

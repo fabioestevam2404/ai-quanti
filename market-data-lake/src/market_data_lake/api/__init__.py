@@ -9,11 +9,19 @@ from __future__ import annotations
 
 from datetime import date
 
+from market_data_lake.application.declare_adjustment import DeclareAdjustmentUseCase
 from market_data_lake.application.get_price_series import GetPriceSeriesUseCase
 from market_data_lake.application.ingest_daily_bars import IngestDailyBarsUseCase
 from market_data_lake.domain.adjustment import CorporateEvent
 from market_data_lake.domain.entities import IngestionRun, OHLCVBar
 from market_data_lake.domain.providers import MarketDataProvider
+from market_data_lake.domain.reconciliation import AdjustmentDeclaration
+
+# Reexportados para outros módulos (ex.: item 7 do backtesting-engine), que só
+# podem importar desta API (ADR-0001).
+from market_data_lake.domain.reconciliation import Pendency as Pendency
+from market_data_lake.domain.reconciliation import PendencyKind as PendencyKind
+from market_data_lake.domain.reconciliation import Tolerances as Tolerances
 from market_data_lake.infrastructure.corporate_events.b3_snapshot import (
     B3CorporateEventsClient,
     SnapshotStore,
@@ -26,16 +34,14 @@ from market_data_lake.infrastructure.persistence.duckdb_bar_repository import (
 from market_data_lake.infrastructure.persistence.postgres_ingestion_log_repository import (
     PostgresIngestionLogRepository,
 )
-from market_data_lake.infrastructure.providers.alpha_vantage_provider import (
-    AlphaVantageProvider,
-)
 from market_data_lake.infrastructure.providers.cotahist_provider import CotahistProvider
 from market_data_lake.infrastructure.providers.mock_provider import MockMarketDataProvider
 
 _PROVIDERS: dict[str, type[MarketDataProvider]] = {
     "mock": MockMarketDataProvider,
-    "alpha_vantage": AlphaVantageProvider,
-    "cotahist": CotahistProvider,  # séries oficiais da B3, preços brutos (spec v2)
+    # Séries oficiais da B3, preços brutos (spec v2). A Alpha Vantage saiu: no
+    # plano gratuito só entrega ~100 barras sem ajuste (investigação 0001).
+    "cotahist": CotahistProvider,
 }
 
 
@@ -72,6 +78,18 @@ def get_price_series(ticker: str, start: date, end: date, adjusted: bool = False
         price_repository=DuckDBBarRepository(), events_loader=_load_events
     )
     return use_case.execute(ticker, start, end, adjusted=adjusted)
+
+
+def get_adjustment_declaration(ticker: str, start: date, end: date) -> AdjustmentDeclaration:
+    """Declara se a série do período está ajustada e reconciliada (spec v2, R4).
+
+    `verified` só com zero pendências na reconciliação contra o COTAHIST. Série
+    sem eventos (mock) ou sem snapshot é declarada não ajustada, com o motivo.
+    """
+    use_case = DeclareAdjustmentUseCase(
+        price_repository=DuckDBBarRepository(), events_loader=_load_events
+    )
+    return use_case.execute(ticker, start, end)
 
 
 def refresh_corporate_events(ticker: str) -> date:

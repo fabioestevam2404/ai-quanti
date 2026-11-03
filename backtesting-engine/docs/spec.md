@@ -87,7 +87,7 @@ ADR-0013), `não verificado` ou `falhou`, mais um texto de evidência.
 | 4 | Walk-forward | `verificado` se as `k` dobras rodarem com dados suficientes; `não verificado` caso contrário |
 | 5 | Out-of-sample | `verificado` se o período reservado tiver barras suficientes para ao menos uma operação possível (≥ `M` + 1 barras); `não verificado` caso contrário |
 | 6 | Robustez de parâmetro | `verificado` ou `falhou` pela regra da tabela anterior |
-| 7 | Preços ajustados | `verificado` só se o `market-data-lake` declarar a série como ajustada, com método. **Até o REQ-01, é sempre `não verificado`** — e o relatório fica inelegível para paper, como deve ser |
+| 7 | Preços ajustados | `verificado` só se a declaração do `market-data-lake` (`get_adjustment_declaration`, REQ-01) de **todos** os ativos for ajustada e sem pendências na reconciliação contra o COTAHIST. Série não ajustada (ex.: mock), sem declaração ou com qualquer pendência: `não verificado`, com o motivo na evidência. O backtest lê a série ajustada quando ela existe |
 
 **Elegibilidade (ADR-0013):**
 - `apto_para_paper`: todos os itens `verificado`, exceto o item 2, que pode
@@ -167,8 +167,10 @@ Declarados no relatório; mudá-los é decisão registrada, não ajuste fino.
 8. **Checklist completo:** os 7 itens sempre presentes; `apto_para_paper` e
    `apto_para_capital_real` seguem o ADR-0013 em todas as combinações de
    estados (tabela-verdade testada).
-9. **Item 7 honesto:** com a fonte atual (sem declaração de ajuste), o item 7
-   é `não verificado` e o relatório não é apto para paper.
+9. **Item 7 honesto:** o item 7 só é `verificado` quando a declaração de
+   ajuste de todos os ativos for verificada (REQ-01); fonte sem declaração
+   (mock) ou qualquer pendência mantém `não verificado` e o relatório inapto
+   para paper.
 10. **Custo zero reprova:** `cost_bps = 0` ou `slippage_bps = 0` faz o item 3
     `falhou`.
 11. **Determinismo:** mesma configuração e mesmos dados produzem relatório
@@ -196,7 +198,7 @@ tabela no mesmo PR; critério sem teste automatizado precisa de justificativa.
 | 6. Walk-forward só com treino | `test_validation.py::test_cada_dobra_escolhe_so_com_o_proprio_treino`; `::test_planejamento_reserva_o_fim_e_dobras_nao_se_sobrepoem` | Integração |
 | 7. Robustez | `test_validation.py::test_vizinhos_perturbam_n_e_m_em_10_e_20_por_cento`; `::test_vizinhos_invalidos_sao_descartados`; `::test_regra_de_robustez`; `::test_robustez_do_resultado_segue_a_regra_sobre_os_vizinhos_reportados` | Unitário + integração |
 | 8. Checklist completo e elegibilidade | `test_checklist.py::test_sete_itens_em_ordem`; `::test_elegibilidade_com_um_item_fora_do_verificado` (28 combinações item × estado); `::test_limitacao_no_item_2_nao_compensa_outro_item_ruim`; `::test_checklist_incompleto_nunca_e_elegivel`; `::test_item_1_reprova_sinal_que_espia_o_futuro`; `::test_item_4_dobra_sem_teste_fica_nao_verificado`; `::test_item_5_sem_out_of_sample_fica_nao_verificado`; `::test_item_6_segue_a_regra_de_robustez` | Unitário |
-| 9. Item 7 honesto | `test_checklist.py::test_item_7_nao_verificado_enquanto_a_fonte_nao_declara_ajuste`; `test_run_backtest.py::test_relatorio_tem_checklist_completo_e_elegibilidade` | Unitário |
+| 9. Item 7 honesto | `test_checklist.py::test_item_7_sem_declaracao_fica_nao_verificado`; `::test_item_7_verificado_com_todas_as_series_ajustadas_e_sem_pendencias`; `::test_item_7_uma_pendencia_em_qualquer_ativo_mantem_nao_verificado`; `::test_item_7_serie_nao_ajustada_mostra_o_motivo`; `::test_item_7_ativo_sem_declaracao_fica_nao_verificado`; `test_run_backtest.py::test_serie_declarada_verificada_e_pedida_ajustada_e_aprova_o_item_7`; `::test_serie_nao_ajustada_e_lida_bruta_e_o_motivo_vai_para_o_item_7` | Unitário |
 | 10. Custo zero reprova | `test_checklist.py::test_item_3_custo_zero_reprova` | Unitário |
 | 11. Determinismo | `test_run_backtest.py::test_relatorio_e_deterministico`; `test_validation.py::test_validacao_e_deterministica` | Unitário |
 | 12. Fronteira Decimal | `test_money.py::test_converte_para_centavos_com_arredondamento_conhecido`; `::test_rejeita_valor_nao_finito`; `test_run_backtest.py::test_valores_monetarios_do_relatorio_sao_decimal_em_centavos`; `::test_capital_inicial_precisa_ser_decimal` | Unitário |

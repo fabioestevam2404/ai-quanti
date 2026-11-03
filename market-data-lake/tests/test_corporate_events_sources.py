@@ -69,6 +69,23 @@ def test_percentual_ausente_e_derivado_pela_formula_da_b3() -> None:
     assert derived.price_factor == pytest.approx(1 - 0.0000000001 / 37.21)
 
 
+def test_valor_e_fechamento_por_lote_viram_por_acao() -> None:
+    # Em 2000 a B3 cotava por lote de mil (quotedPerShares = 1000): fechamento
+    # 462,98 por lote = 0,46298 por ação, como no COTAHIST depois do FATCOT.
+    cash = [
+        e
+        for e in parse_b3_snapshot(_snapshot("PETR"))
+        if e.last_date_with_right == date(2000, 3, 23)
+        and e.share_class == "PN"
+        and e.label == "DIVIDENDO"
+    ]
+
+    assert len(cash) == 1
+    assert cash[0].reference_close == pytest.approx(0.46298)
+    assert cash[0].value_per_share == pytest.approx(0.00358)
+    assert cash[0].price_factor == pytest.approx(1 - 0.773252 / 100)  # percentual não muda
+
+
 def test_cisao_do_itau_vem_sem_fator_automatico() -> None:
     spin_offs = [
         e for e in parse_b3_snapshot(_snapshot("ITUB")) if e.label.startswith("CIS RED CAP")

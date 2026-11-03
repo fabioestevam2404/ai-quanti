@@ -21,6 +21,7 @@ from backtesting_engine.domain.entities import (
 )
 from synthetic import START, wave_universe
 
+from market_data_lake.api import AdjustmentDeclaration, Pendency, PendencyKind
 from market_data_lake.domain.entities import OHLCVBar
 
 V = ChecklistStatus.VERIFICADO
@@ -207,11 +208,74 @@ def test_item_6_segue_a_regra_de_robustez(
     assert _status(build_checklist(_config(), universe, with_rule), 6) is expected
 
 
-def test_item_7_nao_verificado_enquanto_a_fonte_nao_declara_ajuste(
+def _declaration(ticker: str, **changes: object) -> AdjustmentDeclaration:
+    base = AdjustmentDeclaration(
+        ticker=ticker,
+        start=START,
+        end=date(2025, 12, 31),
+        adjusted=True,
+        method="ajuste para trás; reconciliação contra o COTAHIST",
+        sources=("b3:PETR:2026-11-03",),
+        events_applied=(("desdobramento", 1), ("provento em dinheiro", 12)),
+    )
+    return replace(base, **changes)  # type: ignore[arg-type]
+
+
+def test_item_7_sem_declaracao_fica_nao_verificado(
     universe: dict[str, list[OHLCVBar]], validation: ValidationResult
 ) -> None:
-    # Critério 9: hoje o market-data-lake não declara ajuste por proventos.
+    # Critério 9: sem declaração do market-data-lake, o motor não afirma o ajuste.
     items = build_checklist(_config(point_in_time=True), universe, validation)
 
     assert _status(items, 7) is N
     assert is_eligible_for_paper(items) is False
+
+
+def test_item_7_verificado_com_todas_as_series_ajustadas_e_sem_pendencias(
+    universe: dict[str, list[OHLCVBar]], validation: ValidationResult
+) -> None:
+    # Critério 13 (spec v2 do market-data-lake).
+    declarations = {t: _declaration(t) for t in universe}
+
+    item = build_checklist(_config(), universe, validation, declarations)[6]
+
+    assert item.status is V
+    assert "PETR4" in item.evidence and "VALE3" in item.evidence
+
+
+def test_item_7_uma_pendencia_em_qualquer_ativo_mantem_nao_verificado(
+    universe: dict[str, list[OHLCVBar]], validation: ValidationResult
+) -> None:
+    pendency = Pendency(PendencyKind.UNEXPLAINED_GAP, date(2025, 3, 3), "razão 0,2500 sem evento")
+    declarations = {
+        "PETR4": _declaration("PETR4"),
+        "VALE3": _declaration("VALE3", pendencies=(pendency,)),
+    }
+
+    item = build_checklist(_config(), universe, validation, declarations)[6]
+
+    assert item.status is N
+    assert "VALE3" in item.evidence and "salto sem evento" in item.evidence
+
+
+def test_item_7_serie_nao_ajustada_mostra_o_motivo(
+    universe: dict[str, list[OHLCVBar]], validation: ValidationResult
+) -> None:
+    declarations = {
+        "PETR4": _declaration("PETR4"),
+        "VALE3": _declaration("VALE3", adjusted=False, reason="série sem ISIN (mock)"),
+    }
+
+    item = build_checklist(_config(), universe, validation, declarations)[6]
+
+    assert item.status is N
+    assert "série sem ISIN (mock)" in item.evidence
+
+
+def test_item_7_ativo_sem_declaracao_fica_nao_verificado(
+    universe: dict[str, list[OHLCVBar]], validation: ValidationResult
+) -> None:
+    item = build_checklist(_config(), universe, validation, {"PETR4": _declaration("PETR4")})[6]
+
+    assert item.status is N
+    assert "VALE3" in item.evidence

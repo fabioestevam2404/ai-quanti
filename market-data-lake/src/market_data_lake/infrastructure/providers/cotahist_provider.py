@@ -110,9 +110,11 @@ class CotahistProvider:
 
 def _read_quotes(archive: Path, ticker: str) -> Iterator[CotahistQuote]:
     with zipfile.ZipFile(archive) as zipped:
-        members = [name for name in zipped.namelist() if name.upper().endswith(".TXT")]
+        # Nome do membro mudou com o tempo: "COTAHIST.A2000" (layout antigo) e
+        # "COTAHIST_A2005.TXT" a partir de 2005.
+        members = [name for name in zipped.namelist() if name.upper().startswith("COTAHIST")]
         if not members:
-            raise ValueError(f"{archive.name} não contém o arquivo TXT do COTAHIST")
+            raise ValueError(f"{archive.name} não contém o arquivo do COTAHIST")
         with zipped.open(members[0]) as raw:
             yield from parse_cotahist(
                 io.TextIOWrapper(raw, encoding="latin-1"), ticker=ticker, market_type=SPOT_MARKET

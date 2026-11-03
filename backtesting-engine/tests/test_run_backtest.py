@@ -18,7 +18,7 @@ from backtesting_engine.domain.entities import (
 )
 from synthetic import START, wave_universe
 
-from market_data_lake.api import ingest_daily_bars
+from market_data_lake.api import AdjustmentDeclaration, ingest_daily_bars
 from market_data_lake.domain.entities import OHLCVBar
 
 GRID = (MovingAverageParams(3, 8), MovingAverageParams(5, 15))
@@ -42,12 +42,54 @@ def _config(
     )
 
 
-def _synthetic_loader(ticker: str, start: date, end: date) -> list[OHLCVBar]:
+def _synthetic_loader(
+    ticker: str, start: date, end: date, adjusted: bool = False
+) -> list[OHLCVBar]:
     return [bar for bar in wave_universe()[ticker] if start <= bar.bar_date <= end]
 
 
+def _not_adjusted(ticker: str, start: date, end: date) -> AdjustmentDeclaration:
+    return AdjustmentDeclaration(
+        ticker, start, end, adjusted=False, method="-", reason="série sintética de teste"
+    )
+
+
 def _run() -> BacktestReport:
-    return RunBacktestUseCase(price_loader=_synthetic_loader).execute(_config())
+    use_case = RunBacktestUseCase(price_loader=_synthetic_loader, declaration_loader=_not_adjusted)
+    return use_case.execute(_config())
+
+
+def test_serie_declarada_verificada_e_pedida_ajustada_e_aprova_o_item_7() -> None:
+    requested: list[bool] = []
+
+    def loader(ticker: str, start: date, end: date, adjusted: bool = False) -> list[OHLCVBar]:
+        requested.append(adjusted)
+        return _synthetic_loader(ticker, start, end)
+
+    def verified(ticker: str, start: date, end: date) -> AdjustmentDeclaration:
+        return AdjustmentDeclaration(ticker, start, end, adjusted=True, method="ajuste")
+
+    report = RunBacktestUseCase(price_loader=loader, declaration_loader=verified).execute(_config())
+
+    assert requested == [True, True]
+    assert report.checklist[6].status is ChecklistStatus.VERIFICADO
+    assert {d.ticker for d in report.price_declarations} == {"PETR4", "VALE3"}
+
+
+def test_serie_nao_ajustada_e_lida_bruta_e_o_motivo_vai_para_o_item_7() -> None:
+    requested: list[bool] = []
+
+    def loader(ticker: str, start: date, end: date, adjusted: bool = False) -> list[OHLCVBar]:
+        requested.append(adjusted)
+        return _synthetic_loader(ticker, start, end)
+
+    report = RunBacktestUseCase(price_loader=loader, declaration_loader=_not_adjusted).execute(
+        _config()
+    )
+
+    assert requested == [False, False]
+    assert report.checklist[6].status is ChecklistStatus.NAO_VERIFICADO
+    assert "série sintética de teste" in report.checklist[6].evidence
 
 
 def test_relatorio_tem_checklist_completo_e_elegibilidade() -> None:
@@ -86,7 +128,10 @@ def test_relatorio_e_deterministico() -> None:
 
 
 def test_ativo_sem_dados_no_periodo_e_erro_explicito() -> None:
-    use_case = RunBacktestUseCase(price_loader=lambda ticker, start, end: [])
+    use_case = RunBacktestUseCase(
+        price_loader=lambda ticker, start, end, adjusted=False: [],
+        declaration_loader=_not_adjusted,
+    )
 
     with pytest.raises(ValueError, match="sem dados"):
         use_case.execute(_config())
