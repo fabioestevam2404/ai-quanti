@@ -232,7 +232,13 @@ alteração; variações sintéticas são montadas nos próprios testes.
 |---|---|---|
 | 5. Leitura do COTAHIST | `test_cotahist_parser.py::test_le_precos_do_desdobramento_de_2008`; `::test_fatcot_1000_vira_preco_por_acao`; `::test_ignora_cabecalho_e_rodape`; `::test_mercado_fracionario_tem_codigo_e_mercado_proprios`; `::test_filtro_vem_antes_do_calculo_de_preco`; `::test_fatcot_zero_na_linha_pedida_e_erro_explicito`; `test_cotahist_provider.py::test_so_mercado_a_vista_do_ticker_pedido`; `::test_mesmo_codigo_em_outro_mercado_fica_fora` | Unitário |
 | 6. Cache e retentativa | `test_cotahist_provider.py::test_ano_ja_baixado_nao_e_baixado_de_novo`; `::test_falha_no_meio_do_download_nao_deixa_arquivo_parcial`; `::test_todas_as_tentativas_falham_e_erro_cita_a_url`; `::test_resposta_de_sucesso_que_nao_e_zip_nao_entra_no_cache`; `::test_cache_corrompido_e_baixado_de_novo`; `::test_ano_corrente_vale_so_por_um_dia` | Unitário |
-| 7 a 13 | Pendentes: fatias 2 (eventos e ajuste) e 3 (reconciliação, declaração, item 7) | — |
+| 7. Snapshot | `test_adjusted_series.py::test_api_ajusta_a_partir_do_snapshot_sem_rede`; `test_corporate_events_sources.py::test_store_guarda_e_le_o_snapshot_mais_recente` | Integração |
+| 8. Sentido do fator | `test_adjusted_series.py::test_desdobramento_de_2008_e_grupamento_de_2000_sem_salto`; `test_corporate_events_sources.py::test_desdobramento_e_grupamento_da_petr4_com_o_fator_de_preco_certo`; `test_adjustment.py::test_desdobramento_divide_os_precos_anteriores`; `::test_grupamento_multiplica_os_precos_anteriores` | Integração + unitário |
+| 9. Correção prevalece | `test_adjusted_series.py::test_desdobramento_de_2005_so_existe_na_tabela_de_correcoes`; `test_adjustment.py::test_correcao_prevalece_sobre_evento_de_capital_da_b3_na_mesma_data_ex`; `test_corporate_events_sources.py::test_tabela_de_correcoes_versionada` | Integração + unitário |
+| 10. Cisão | `test_adjusted_series.py::test_cisao_da_itub4_ajustada_pela_correcao`; `test_adjustment.py::test_evento_sem_fator_e_sem_correcao_fica_como_nao_suportado` | Integração + unitário |
+| 11. Proventos em dinheiro | `test_adjustment.py::test_provento_em_dinheiro_aplica_o_fator_da_b3`; `test_corporate_events_sources.py::test_proventos_em_dinheiro_usam_o_percentual_da_b3`; `::test_percentual_ausente_e_derivado_pela_formula_da_b3`. A pendência por incoerência entre percentual e valor fica para a fatia 3 | Unitário |
+| 12. Último preço intacto | `test_adjusted_series.py::test_ultimo_preco_igual_ao_bruto`; `test_adjustment.py::test_ultimo_preco_da_serie_nunca_muda` | Integração + unitário |
+| 13 | Pendente: fatia 3 (declaração e item 7) | — |
 | 14. Compatibilidade | Suíte v1 inalterada e verde; `test_cotahist_ingestion.py::test_ingere_do_cotahist_e_le_pela_api` | Integração |
 | 15. Sem rede nos testes | Estrutural nesta fatia: downloads substituídos por funções que copiam a amostra; cache pré-preenchido na integração | Estrutural |
 
@@ -242,8 +248,36 @@ filtro por código e mercado vem **antes** da conversão de preços: o COTAHIST
 real de 2007 tem 4 opções com `FATCOT = 0`, que derrubariam a leitura — achado
 na verificação manual com download real, não pela amostra.
 
+Fixado na implementação (fatia 2):
+
+- **ISIN no `Instrument`** (opcional; `None` no mock) e coluna `isin` no
+  DuckDB, criada por `ALTER ... ADD COLUMN IF NOT EXISTS` (DuckDB fora do
+  Alembic, ADR-0012). Eventos de capital casam por ISIN; proventos em dinheiro
+  (a rota completa não traz ISIN) casam pela classe (`typeStock`: final 3 =
+  ON, 4 = PN); correções, pelo ticker.
+- **Data ex na série:** evento da B3 vale a partir do primeiro pregão depois da
+  data-com; correção, a partir do primeiro pregão na data ex ou depois. Evento
+  sem pregão antes dele na série não tem efeito.
+- **Linhas idênticas da B3 contam uma vez** (a cisão do Itaú aparece repetida);
+  proventos distintos na mesma data-com somam.
+- **Percentual ausente:** quando a B3 não informa `corporateActionPrice`, o
+  fator é `1 − valueCash / closingPricePriorExDate` (a mesma conta do
+  percentual, conferida nos eventos que o têm) e o evento fica marcado como
+  derivado. Caso real: três RENDIMENTO da PETR4 de valor simbólico
+  (R$ 0,0000000001).
+- `refresh_corporate_events` devolve a data da coleta.
+
+Verificação com anos inteiros de dados reais (fora da suíte): PETR4 de 2005 a
+2008 tem exatamente dois saltos de abertura fora de [0,75; 1,33] na série
+bruta (01/09/2005 e 28/04/2008) e nenhum na ajustada; ITUB4 em 2021, nenhum
+evento sem suporte. Último preço igual ao bruto nas duas.
+
 Testes validados com defeitos simulados: ignorar `FATCOT`, não apagar arquivo
 parcial, ano corrente sem expirar e sem retentativa quebram os testes. "Sem
 filtro de mercado à vista" e "ZIP baixado sem validação" sobreviveram à
 primeira versão dos testes e motivaram `test_mesmo_codigo_em_outro_mercado_fica_fora`
-e `test_resposta_de_sucesso_que_nao_e_zip_nao_entra_no_cache`.
+e `test_resposta_de_sucesso_que_nao_e_zip_nao_entra_no_cache`. Na fatia 2, os
+8 defeitos simulados quebram os testes na primeira versão: fator de
+desdobramento sem `/100`, grupamento sem inverter, percentual sem `/100`,
+correção sem prevalecer, linhas repetidas contando duas vezes, data ex um dia
+antes, fator aplicado no próprio dia ex e ISIN ignorado.

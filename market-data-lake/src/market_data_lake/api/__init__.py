@@ -11,8 +11,15 @@ from datetime import date
 
 from market_data_lake.application.get_price_series import GetPriceSeriesUseCase
 from market_data_lake.application.ingest_daily_bars import IngestDailyBarsUseCase
+from market_data_lake.domain.adjustment import CorporateEvent
 from market_data_lake.domain.entities import IngestionRun, OHLCVBar
 from market_data_lake.domain.providers import MarketDataProvider
+from market_data_lake.infrastructure.corporate_events.b3_snapshot import (
+    B3CorporateEventsClient,
+    SnapshotStore,
+    parse_b3_snapshot,
+)
+from market_data_lake.infrastructure.corporate_events.corrections import load_corrections
 from market_data_lake.infrastructure.persistence.duckdb_bar_repository import (
     DuckDBBarRepository,
 )
@@ -54,7 +61,40 @@ def ingest_daily_bars(ticker: str, start: date, end: date, source: str) -> Inges
     return use_case.execute(ticker, start, end)
 
 
-def get_price_series(ticker: str, start: date, end: date) -> list[OHLCVBar]:
-    """Lê a série histórica de preços já ingerida."""
-    use_case = GetPriceSeriesUseCase(price_repository=DuckDBBarRepository())
-    return use_case.execute(ticker, start, end)
+def get_price_series(ticker: str, start: date, end: date, adjusted: bool = False) -> list[OHLCVBar]:
+    """Lê a série histórica de preços já ingerida.
+
+    `adjusted=True` ajusta por proventos a partir do último snapshot de
+    eventos da B3 e da tabela de correções (spec v2). O padrão continua
+    bruto, para não mudar o comportamento de quem já usa a função.
+    """
+    use_case = GetPriceSeriesUseCase(
+        price_repository=DuckDBBarRepository(), events_loader=_load_events
+    )
+    return use_case.execute(ticker, start, end, adjusted=adjusted)
+
+
+def refresh_corporate_events(ticker: str) -> date:
+    """Coleta os eventos da empresa nas rotas da B3 e guarda um snapshot novo.
+
+    Devolve a data da coleta. Faz chamadas de rede; o ajuste em si só lê
+    snapshots já guardados.
+    """
+    store = SnapshotStore()
+    snapshot = B3CorporateEventsClient().collect(_company_code(ticker))
+    store.save(snapshot)
+    return date.fromisoformat(snapshot["collected_on"])
+
+
+def _company_code(ticker: str) -> str:
+    return ticker[:4]  # convenção da B3: PETR4 -> PETR
+
+
+def _load_events(ticker: str) -> list[CorporateEvent]:
+    snapshot = SnapshotStore().load_latest(_company_code(ticker))
+    if snapshot is None:
+        raise LookupError(
+            f"sem snapshot de eventos da B3 para {ticker}: "
+            f"rode refresh_corporate_events({ticker!r}) antes de pedir série ajustada"
+        )
+    return parse_b3_snapshot(snapshot) + load_corrections()
