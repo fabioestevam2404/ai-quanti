@@ -2,19 +2,14 @@ from __future__ import annotations
 
 import io
 import os
-import ssl
 import time
 import zipfile
 from collections.abc import Callable, Iterator
 from datetime import date
 from pathlib import Path
-from typing import Any
-
-import requests
-import truststore
-from requests.adapters import HTTPAdapter
 
 from market_data_lake.domain.entities import Instrument, OHLCVBar
+from market_data_lake.infrastructure.http import system_trust_session
 from market_data_lake.infrastructure.providers.cotahist_parser import (
     CotahistQuote,
     parse_cotahist,
@@ -32,18 +27,8 @@ class CotahistDownloadError(RuntimeError):
     """Download do arquivo anual falhou em todas as tentativas."""
 
 
-class _SystemTrustAdapter(HTTPAdapter):
-    # Usa o repositório de certificados do sistema operacional: funciona em
-    # rede com inspeção TLS sem desligar a verificação de certificado.
-    def init_poolmanager(self, *args: Any, **kwargs: Any) -> None:
-        kwargs["ssl_context"] = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        super().init_poolmanager(*args, **kwargs)
-
-
 def download_with_system_trust(url: str, destination: Path) -> None:
-    session = requests.Session()
-    session.mount("https://", _SystemTrustAdapter())
-    with session.get(url, stream=True, timeout=(10, 300)) as response:
+    with system_trust_session().get(url, stream=True, timeout=(10, 300)) as response:
         response.raise_for_status()
         with destination.open("wb") as file:
             for chunk in response.iter_content(chunk_size=1 << 20):
@@ -79,14 +64,13 @@ class CotahistProvider:
     def fetch_daily_bars(self, ticker: str, start: date, end: date) -> list[OHLCVBar]:
         if end < start:
             raise ValueError(f"end ({end}) anterior a start ({start})")
-        instrument = Instrument(ticker=ticker)
         bars: list[OHLCVBar] = []
         for year in range(start.year, end.year + 1):
             # O fracionário tem código próprio (PETR4F) e TPMERC 020: o filtro
             # por código exato e mercado à vista exclui os dois.
             for quote in _read_quotes(self._archive_for(year), ticker):
                 if start <= quote.trade_date <= end:
-                    bars.append(_to_bar(instrument, quote))
+                    bars.append(_to_bar(quote))
         return sorted(bars, key=lambda bar: bar.bar_date)
 
     def _archive_for(self, year: int) -> Path:
@@ -135,9 +119,10 @@ def _read_quotes(archive: Path, ticker: str) -> Iterator[CotahistQuote]:
             )
 
 
-def _to_bar(instrument: Instrument, quote: CotahistQuote) -> OHLCVBar:
+def _to_bar(quote: CotahistQuote) -> OHLCVBar:
     return OHLCVBar(
-        instrument=instrument,
+        # ISIN por barra: liga o ticker à classe de ação dos eventos da B3.
+        instrument=Instrument(ticker=quote.ticker, isin=quote.isin),
         bar_date=quote.trade_date,
         open=quote.open,
         high=quote.high,

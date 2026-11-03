@@ -10,6 +10,9 @@ class Instrument:
     ticker: str
     exchange: str = "B3"
     currency: str = "BRL"
+    # Liga o ticker à classe de ação dos eventos da B3 (ex.: PETR4 -> BRPETRACNPR6).
+    # None quando a fonte não informa (mock, barras anteriores ao REQ-01).
+    isin: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

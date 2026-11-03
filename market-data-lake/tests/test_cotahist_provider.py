@@ -116,7 +116,7 @@ def test_periodo_de_varios_anos_le_um_arquivo_por_ano(tmp_path: Path) -> None:
         "PETR4", date(2000, 6, 1), date(2008, 4, 30)
     )
 
-    assert [b.bar_date.year for b in bars] == [2000, 2000, 2008, 2008]
+    assert [b.bar_date.year for b in bars] == [2000, 2000, 2005, 2005, 2008, 2008]
     assert len(downloader.calls) == 9  # um arquivo por ano, de 2000 a 2008
 
 

@@ -38,6 +38,9 @@ class DuckDBBarRepository:
             )
             """
         )
+        # Coluna do REQ-01 (spec v2). DuckDB fica fora do Alembic (ADR-0012):
+        # ALTER idempotente para bancos criados antes dela.
+        self._connection.execute("ALTER TABLE ohlcv_bars ADD COLUMN IF NOT EXISTS isin VARCHAR")
 
     def save_bars(self, bars: list[OHLCVBar]) -> None:
         if not bars:
@@ -53,20 +56,22 @@ class DuckDBBarRepository:
                 bar.low,
                 bar.close,
                 bar.volume,
+                bar.instrument.isin,
             )
             for bar in bars
         ]
         self._connection.executemany(
             """
             INSERT INTO ohlcv_bars
-                (ticker, exchange, currency, bar_date, open, high, low, close, volume)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (ticker, exchange, currency, bar_date, open, high, low, close, volume, isin)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (ticker, bar_date) DO UPDATE SET
                 open = excluded.open,
                 high = excluded.high,
                 low = excluded.low,
                 close = excluded.close,
-                volume = excluded.volume
+                volume = excluded.volume,
+                isin = excluded.isin
             """,
             rows,
         )
@@ -74,7 +79,7 @@ class DuckDBBarRepository:
     def get_bars(self, ticker: str, start: date, end: date) -> list[OHLCVBar]:
         result = self._connection.execute(
             """
-            SELECT ticker, exchange, currency, bar_date, open, high, low, close, volume
+            SELECT ticker, exchange, currency, bar_date, open, high, low, close, volume, isin
             FROM ohlcv_bars
             WHERE ticker = ? AND bar_date BETWEEN ? AND ?
             ORDER BY bar_date
@@ -84,7 +89,7 @@ class DuckDBBarRepository:
 
         return [
             OHLCVBar(
-                instrument=Instrument(ticker=row[0], exchange=row[1], currency=row[2]),
+                instrument=Instrument(ticker=row[0], exchange=row[1], currency=row[2], isin=row[9]),
                 bar_date=row[3],
                 open=row[4],
                 high=row[5],
