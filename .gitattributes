@@ -1,0 +1,4 @@
+# Amostras de dados reais (ex.: linhas do COTAHIST da B3, ISO-8859-1, 245
+# caracteres por linha): byte a byte como na fonte, sem conversão de fim de
+# linha nem de codificação em nenhum sistema operacional.
+**/tests/fixtures/** -text

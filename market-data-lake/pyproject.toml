@@ -8,6 +8,8 @@ dependencies = [
     "duckdb>=1.0.0",
     "psycopg[binary]>=3.1",
     "requests>=2.31",
+    # Certificados do sistema no download da B3 (rede com inspeção TLS).
+    "truststore>=0.9",
 ]
 
 # Ferramentas de dev/teste: grupo `dev` do workspace na raiz (ADR-0011).
