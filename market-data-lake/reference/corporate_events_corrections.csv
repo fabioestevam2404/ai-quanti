@@ -1,3 +1,4 @@
 ticker,ex_date,tipo,price_factor,fonte,nota
 PETR4,2005-09-01,desdobramento,0.25,https://www.alphaspread.com/security/bovespa/petr4/investor-returns/i/stock-splits,"Desdobramento 1:4 ausente nas rotas da B3; salto 130,00 -> 32,51 no COTAHIST de 2005 (investigação 0002)"
+ITUB4,2011-11-01,grupamento,1.0,https://www.infomoney.com.br/negocios/banco-central-aprova-grupamento-de-acoes-on-e-pn-do-itau-unibanco/,"Grupamento 100:1 seguido de desdobramento 1:100 simultâneos (AGE de 25/04/2011), efeito líquido nulo; a B3 lista só o grupamento. Achado pela reconciliação no primeiro backtest real (relatório 0003)"
 ITUB4,2021-10-04,cisão,0.8246,https://www.infomoney.com.br/mercados/bdrs-da-xp-passarao-a-ser-negociados-na-b3-nesta-2a-apos-incorporacao-da-xpart-acoes-do-itau-passam-por-reajuste/,"Cisão da participação na XP: ajuste de -17,54% informado pela B3; 29,67 x 0,8246 = 24,4659 contra referência 24,4655 (investigação 0002)"

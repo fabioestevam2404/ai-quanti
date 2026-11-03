@@ -179,6 +179,19 @@ def test_sem_a_correcao_de_2005_a_reconciliacao_acusa_o_salto(tmp_path: Path) ->
     assert with_fix == ()
 
 
+def test_grupamento_e_desdobramento_simultaneos_do_itau_em_2011(tmp_path: Path) -> None:
+    # Achado do primeiro backtest real: a B3 lista só o grupamento 100:1 de
+    # 31/10/2011; houve desdobramento 1:100 simultâneo, sem efeito no preço.
+    # Sem a correção, o ajuste multiplicaria por 100 os preços anteriores.
+    without = _real("ITUB4", "ITUB", date(2011, 10, 1), date(2011, 11, 30), tmp_path, False)
+    with_fix = _real("ITUB4", "ITUB", date(2011, 10, 1), date(2011, 11, 30), tmp_path, True)
+
+    assert [(p.kind, p.bar_date) for p in without] == [
+        (PendencyKind.CAPITAL_MISMATCH, date(2011, 11, 1))
+    ]
+    assert with_fix == ()
+
+
 def test_cisao_sem_correcao_vira_pendencia_e_com_correcao_nao(tmp_path: Path) -> None:
     # Critério 10.
     without = _real("ITUB4", "ITUB", date(2021, 9, 1), date(2021, 10, 31), tmp_path, False)

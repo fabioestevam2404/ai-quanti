@@ -119,6 +119,10 @@ mudar uma delas é mudança de escopo e volta a este documento.
 2. ✅ **REQ-01 — dados reais ajustados**: investigação 0002, spec v2 do
    `market-data-lake` e implementação em três fatias (concluído em
    2026-11-03; Alpha Vantage retirada).
+   ✅ **Primeiro backtest real** ([relatório 0003](research/0003-primeiro-backtest-real.md)):
+   PETR4, VALE3 e ITUB4 de 2010 a 2025, **apto para paper** (item 2 com
+   limitação declarada). A reconciliação achou o grupamento incompleto do Itaú
+   em 2011, que sozinho dobrava o drawdown do resultado.
 3. **REQ-03 — orquestração de paper trading** no `trading-api`: gate,
    idempotência, `record_fill` e reconciliação, primeiro em replay.
 4. Paper trading em tempo real pelos 20 pregões.
