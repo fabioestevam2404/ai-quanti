@@ -1,6 +1,6 @@
 # Spec — trading-api (interface de corretora)
 
-**Status:** v1 (port de corretora) implementada; [v2 (REQ-03: orquestração e paper trading em replay)](#v2--req-03-orquestração-de-ordens-e-paper-trading-em-replay) proposta — aguarda aprovação
+**Status:** v1 (port de corretora) implementada; [v2 (REQ-03: orquestração e paper trading em replay)](#v2--req-03-orquestração-de-ordens-e-paper-trading-em-replay) aprovada em 2026-11-03 — pronta para implementação
 **Fase:** 4 — Produto
 **Depende de:** nenhum módulo interno nesta fatia (o port não chama `risk_engine`/`market_data_lake` ainda)
 **ADRs relevantes:** [ADR-0004](../../docs/adr/0004-money-precision-standard.md) (Decimal), [ADR-0006](../../docs/adr/0006-risk-engine-pre-trade-gate.md) (gate), [ADR-0007](../../docs/adr/0007-trading-api-safety-layers.md) (camadas de segurança), [ADR-0008](../../docs/adr/0008-paper-trading-gate.md) (mesmo código em paper e produção)
